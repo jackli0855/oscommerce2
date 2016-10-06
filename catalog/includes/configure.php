@@ -35,9 +35,9 @@
   define('DIR_FS_DOWNLOAD_PUBLIC', DIR_FS_CATALOG . 'pub/');
 
 // define our database connection
-  define('DB_SERVER', ''); // eg, localhost - should not be empty for productive servers
-  define('DB_SERVER_USERNAME', '');
-  define('DB_SERVER_PASSWORD', '');
+  define('DB_SERVER', 'localhost'); // eg, localhost - should not be empty for productive servers
+  define('DB_SERVER_USERNAME', 'ec_cube3');
+  define('DB_SERVER_PASSWORD', 'xie1001');
   define('DB_DATABASE', 'osCommerce');
   define('USE_PCONNECT', 'false'); // use persistent connections?
   define('STORE_SESSIONS', ''); // leave empty '' for default handler or set to 'mysql'
