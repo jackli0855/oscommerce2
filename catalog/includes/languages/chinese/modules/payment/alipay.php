@@ -1,0 +1,5 @@
+<?php
+define('MODULE_PAYMENT_ALIPAY_TEXT_TITLE','支付宝支付');
+define('MODULE_PAYMENT_ALIPAY_TEXT_DESCRIPTION','支付宝支付');
+define('MODULE_PAYMENT_ALIPAY_TEXT_PUBLIC_TITLE','支付宝账户或网银付款');
+?>
