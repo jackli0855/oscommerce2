@@ -5,64 +5,46 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2013 osCommerce
 
   Released under the GNU General Public License
 */
 
-  use OSC\OM\Registry;
-
   function tep_update_whos_online() {
-    $OSCOM_Db = Registry::get('Db');
+    global $customer_id;
 
-    $wo_customer_id = 0;
-    $wo_full_name = 'Guest';
+    if (tep_session_is_registered('customer_id')) {
+      $wo_customer_id = $customer_id;
 
-    if (isset($_SESSION['customer_id'])) {
-      $wo_customer_id = $_SESSION['customer_id'];
+      $customer_query = tep_db_query("select customers_firstname, customers_lastname from " . TABLE_CUSTOMERS . " where customers_id = '" . (int)$customer_id . "'");
+      $customer = tep_db_fetch_array($customer_query);
 
-      $Qcustomer = $OSCOM_Db->prepare('select customers_firstname, customers_lastname from :table_customers where customers_id = :customers_id');
-      $Qcustomer->bindInt(':customers_id', $_SESSION['customer_id']);
-      $Qcustomer->execute();
-
-      $wo_full_name = $Qcustomer->value('customers_firstname') . ' ' . $Qcustomer->value('customers_lastname');
+      $wo_full_name = $customer['customers_firstname'] . ' ' . $customer['customers_lastname'];
+    } else {
+      $wo_customer_id = '';
+      $wo_full_name = 'Guest';
     }
 
-    $wo_session_id = session_id();
+    $wo_session_id = tep_session_id();
     $wo_ip_address = tep_get_ip_address();
-
-    if (is_null($wo_ip_address)) { // database table field (ip_address) is not_null
-      $wo_ip_address = '';
-    }
-
-    $wo_last_page_url = '';
-
-    if (isset($_SERVER['REQUEST_URI']) && !empty($_SERVER['REQUEST_URI']) ) {
-      $wo_last_page_url = $_SERVER['REQUEST_URI'];
-    }
+    $wo_last_page_url = tep_db_prepare_input(getenv('REQUEST_URI'));
 
     $current_time = time();
     $xx_mins_ago = ($current_time - 900);
 
 // remove entries that have expired
-    $Qdel = $OSCOM_Db->prepare('delete from :table_whos_online where time_last_click < :time_last_click');
-    $Qdel->bindInt(':time_last_click', $xx_mins_ago);
-    $Qdel->execute();
+    tep_db_query("delete from " . TABLE_WHOS_ONLINE . " where time_last_click < '" . $xx_mins_ago . "'");
 
-    $Qsession = $OSCOM_Db->prepare('select session_id from :table_whos_online where session_id = :session_id limit 1');
-    $Qsession->bindValue(':session_id', $wo_session_id);
-    $Qsession->execute();
+    $stored_customer_query = tep_db_query("select session_id from " . TABLE_WHOS_ONLINE . " where session_id = '" . tep_db_input($wo_session_id) . "' limit 1");
 
-    if ($Qsession->fetch() !== false) {
-      $OSCOM_Db->save('whos_online', ['customer_id' => $wo_customer_id, 'full_name' => $wo_full_name, 'ip_address' => $wo_ip_address, 'time_last_click' => $current_time, 'last_page_url' => $wo_last_page_url], ['session_id' => $wo_session_id]);
+    if ( tep_db_num_rows($stored_customer_query) > 0 ) {
+      tep_db_query("update " . TABLE_WHOS_ONLINE . " set customer_id = '" . (int)$wo_customer_id . "', full_name = '" . tep_db_input($wo_full_name) . "', ip_address = '" . tep_db_input($wo_ip_address) . "', time_last_click = '" . tep_db_input($current_time) . "', last_page_url = '" . tep_db_input($wo_last_page_url) . "' where session_id = '" . tep_db_input($wo_session_id) . "'");
     } else {
-      $OSCOM_Db->save('whos_online', ['customer_id' => $wo_customer_id, 'full_name' => $wo_full_name, 'session_id' => $wo_session_id, 'ip_address' => $wo_ip_address, 'time_entry' => $current_time, 'time_last_click' => $current_time, 'last_page_url' => $wo_last_page_url]);
+      tep_db_query("insert into " . TABLE_WHOS_ONLINE . " (customer_id, full_name, session_id, ip_address, time_entry, time_last_click, last_page_url) values ('" . (int)$wo_customer_id . "', '" . tep_db_input($wo_full_name) . "', '" . tep_db_input($wo_session_id) . "', '" . tep_db_input($wo_ip_address) . "', '" . tep_db_input($current_time) . "', '" . tep_db_input($current_time) . "', '" . tep_db_input($wo_last_page_url) . "')");
     }
   }
 
   function tep_whos_online_update_session_id($old_id, $new_id) {
-    $OSCOM_Db = Registry::get('Db');
-
-    $OSCOM_Db->save('whos_online', ['session_id' => $new_id], ['session_id' => $old_id]);
+    tep_db_query("update " . TABLE_WHOS_ONLINE . " set session_id = '" . tep_db_input($new_id) . "' where session_id = '" . tep_db_input($old_id) . "'");
   }
 ?>

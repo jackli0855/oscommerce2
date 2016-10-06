@@ -5,13 +5,10 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2010 osCommerce
 
   Released under the GNU General Public License
 */
-
-  use OSC\OM\OSCOM;
-  use OSC\OM\Registry;
 
   class sb_twitter_button {
     var $code = 'sb_twitter_button';
@@ -33,7 +30,9 @@
     }
 
     function getOutput() {
-      $params = array('url=' . urlencode(OSCOM::link('product_info.php', 'products_id=' . $_GET['products_id'], 'NONSSL', false)));
+      global $HTTP_GET_VARS;
+
+      $params = array('url=' . urlencode(tep_href_link(FILENAME_PRODUCT_INFO, 'products_id=' . $HTTP_GET_VARS['products_id'], 'NONSSL', false)));
 
       if ( strlen(MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_ACCOUNT) > 0 ) {
         $params[] = 'via=' . urlencode(MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_ACCOUNT);
@@ -71,73 +70,16 @@
     }
 
     function install() {
-      $OSCOM_Db = Registry::get('Db');
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Enable Twitter Button Module',
-        'configuration_key' => 'MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_STATUS',
-        'configuration_value' => 'True',
-        'configuration_description' => 'Do you want to allow products to be shared through Twitter Button?',
-        'configuration_group_id' => '6',
-        'sort_order' => '1',
-        'set_function' => 'tep_cfg_select_option(array(\'True\', \'False\'), ',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Shop Owner Twitter Account',
-        'configuration_key' => 'MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_ACCOUNT',
-        'configuration_value' => '',
-        'configuration_description' => 'The Twitter account to attribute the tweet to and is recommended to the user to follow.',
-        'configuration_group_id' => '6',
-        'sort_order' => '1',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Related Twitter Account',
-        'configuration_key' => 'MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_RELATED_ACCOUNT',
-        'configuration_value' => '',
-        'configuration_description' => 'A related Twitter account that is also recommended to the user to follow.',
-        'configuration_group_id' => '6',
-        'sort_order' => '1',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Related Twitter Account Description',
-        'configuration_key' => 'MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_RELATED_ACCOUNT_DESC',
-        'configuration_value' => '',
-        'configuration_description' => 'A description for the related Twitter account.',
-        'configuration_group_id' => '6',
-        'sort_order' => '1',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Count Position',
-        'configuration_key' => 'MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_COUNT_POSITION',
-        'configuration_value' => 'Horizontal',
-        'configuration_description' => 'The position of the counter.',
-        'configuration_group_id' => '6',
-        'sort_order' => '1',
-        'set_function' => 'tep_cfg_select_option(array(\'Horizontal\', \'Vertical\', \'None\'), ',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Sort Order',
-        'configuration_key' => 'MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_SORT_ORDER',
-        'configuration_value' => '0',
-        'configuration_description' => 'Sort order of display. Lowest is displayed first.',
-        'configuration_group_id' => '6',
-        'sort_order' => '0',
-        'date_added' => 'now()'
-      ]);
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable Twitter Button Module', 'MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_STATUS', 'True', 'Do you want to allow products to be shared through Twitter Button?', '6', '0', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Shop Owner Twitter Account', 'MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_ACCOUNT', '', 'The Twitter account to attribute the tweet to and is recommended to the user to follow.', '6', '0', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Related Twitter Account', 'MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_RELATED_ACCOUNT', '', 'A related Twitter account that is also recommended to the user to follow.', '6', '0', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Related Twitter Account Description', 'MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_RELATED_ACCOUNT_DESC', '', 'A description for the related Twitter account.', '6', '0', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Count Position', 'MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_COUNT_POSITION', 'Horizontal', 'The position of the counter.', '6', '0', 'tep_cfg_select_option(array(\'Horizontal\', \'Vertical\', \'None\'), ', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Sort Order', 'MODULE_SOCIAL_BOOKMARKS_TWITTER_BUTTON_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', '6', '0', now())");
     }
 
     function remove() {
-      return Registry::get('Db')->exec('delete from :table_configuration where configuration_key in ("' . implode('", "', $this->keys()) . '")');
+      tep_db_query("delete from " . TABLE_CONFIGURATION . " where configuration_key in ('" . implode("', '", $this->keys()) . "')");
     }
 
     function keys() {

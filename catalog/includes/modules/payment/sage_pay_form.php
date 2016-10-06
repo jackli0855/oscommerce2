@@ -5,14 +5,10 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2014 osCommerce
 
   Released under the GNU General Public License
 */
-
-  use OSC\OM\HTML;
-  use OSC\OM\OSCOM;
-  use OSC\OM\Registry;
 
   class sage_pay_form {
     var $code, $title, $description, $enabled;
@@ -68,16 +64,14 @@
     function update_status() {
       global $order;
 
-      $OSCOM_Db = Registry::get('Db');
-
       if ( ($this->enabled == true) && ((int)MODULE_PAYMENT_SAGE_PAY_FORM_ZONE > 0) ) {
         $check_flag = false;
-        $Qcheck = $OSCOM_Db->get('zones_to_geo_zones', 'zone_id', ['geo_zone_id' => MODULE_PAYMENT_SAGE_PAY_FORM_ZONE, 'zone_country_id' => $order->billing['country']['id']], 'zone_id');
-        while ($Qcheck->fetch()) {
-          if ($Qcheck->valueInt('zone_id') < 1) {
+        $check_query = tep_db_query("select zone_id from " . TABLE_ZONES_TO_GEO_ZONES . " where geo_zone_id = '" . MODULE_PAYMENT_SAGE_PAY_FORM_ZONE . "' and zone_country_id = '" . $order->billing['country']['id'] . "' order by zone_id");
+        while ($check = tep_db_fetch_array($check_query)) {
+          if ($check['zone_id'] < 1) {
             $check_flag = true;
             break;
-          } elseif ($Qcheck->valueInt('zone_id') == $order->billing['zone_id']) {
+          } elseif ($check['zone_id'] == $order->billing['zone_id']) {
             $check_flag = true;
             break;
           }
@@ -107,7 +101,7 @@
     }
 
     function process_button() {
-      global $order;
+      global $customer_id, $order, $currency, $cartID;
 
       $process_button_string = '';
 
@@ -123,12 +117,12 @@
       }
 
       $crypt = array('ReferrerID' => 'C74D7B82-E9EB-4FBD-93DB-76F0F551C802',
-                     'VendorTxCode' => substr(date('YmdHis') . '-' . $_SESSION['customer_id'] . '-' . $_SESSION['cartID'], 0, 40),
+                     'VendorTxCode' => substr(date('YmdHis') . '-' . $customer_id . '-' . $cartID, 0, 40),
                      'Amount' => $this->format_raw($order->info['total']),
-                     'Currency' => $_SESSION['currency'],
+                     'Currency' => $currency,
                      'Description' => substr(STORE_NAME, 0, 100),
-                     'SuccessURL' => OSCOM::link('checkout_process.php', '', 'SSL'),
-                     'FailureURL' => OSCOM::link('checkout_payment.php', 'payment_error=' . $this->code, 'SSL'),
+                     'SuccessURL' => tep_href_link(FILENAME_CHECKOUT_PROCESS, '', 'SSL'),
+                     'FailureURL' => tep_href_link(FILENAME_CHECKOUT_PAYMENT, 'payment_error=' . $this->code, 'SSL'),
                      'CustomerName' => substr($order->billing['firstname'] . ' ' . $order->billing['lastname'], 0, 100),
                      'CustomerEMail' => substr($order->customer['email_address'], 0, 255),
                      'BillingSurname' => substr($order->billing['lastname'], 0, 20),
@@ -208,17 +202,17 @@
       $params['Crypt'] = $this->encryptParams($crypt_string);
 
       foreach ($params as $key => $value) {
-        $process_button_string .= HTML::hiddenField($key, $value);
+        $process_button_string .= tep_draw_hidden_field($key, $value);
       }
 
       return $process_button_string;
     }
 
     function before_process() {
-      global $sage_pay_response;
+      global $HTTP_GET_VARS, $sage_pay_response;
 
-      if (isset($_GET['crypt']) && tep_not_null($_GET['crypt'])) {
-        $transaction_response = $this->decryptParams($_GET['crypt']);
+      if (isset($HTTP_GET_VARS['crypt']) && tep_not_null($HTTP_GET_VARS['crypt'])) {
+        $transaction_response = $this->decryptParams($HTTP_GET_VARS['crypt']);
 
         $string_array = explode('&', $transaction_response);
         $sage_pay_response = array('Status' => null);
@@ -235,17 +229,15 @@
 
           $error = $this->getErrorMessageNumber($sage_pay_response['StatusDetail']);
 
-          OSCOM::redirect('checkout_payment.php', 'payment_error=' . $this->code . (tep_not_null($error) ? '&error=' . $error : ''), 'SSL');
+          tep_redirect(tep_href_link(FILENAME_CHECKOUT_PAYMENT, 'payment_error=' . $this->code . (tep_not_null($error) ? '&error=' . $error : ''), 'SSL'));
         }
       } else {
-        OSCOM::redirect('checkout_payment.php', 'payment_error=' . $this->code, 'SSL');
+        tep_redirect(tep_href_link(FILENAME_CHECKOUT_PAYMENT, 'payment_error=' . $this->code, 'SSL'));
       }
     }
 
     function after_process() {
       global $insert_id, $sage_pay_response;
-
-      $OSCOM_Db = Registry::get('Db');
 
       $result = array();
 
@@ -297,18 +289,20 @@
                               'customer_notified' => '0',
                               'comments' => trim($result_string));
 
-      $OSCOM_Db->save('orders_status_history', $sql_data_array);
+      tep_db_perform(TABLE_ORDERS_STATUS_HISTORY, $sql_data_array);
     }
 
     function get_error() {
+      global $HTTP_GET_VARS;
+
       $message = MODULE_PAYMENT_SAGE_PAY_FORM_ERROR_GENERAL;
 
       $error_number = null;
 
-      if ( isset($_GET['error']) && is_numeric($_GET['error']) && $this->errorMessageNumberExists($_GET['error']) ) {
-        $error_number = $_GET['error'];
-      } elseif (isset($_GET['crypt']) && tep_not_null($_GET['crypt'])) {
-        $transaction_response = $this->decryptParams($_GET['crypt']);
+      if ( isset($HTTP_GET_VARS['error']) && is_numeric($HTTP_GET_VARS['error']) && $this->errorMessageNumberExists($HTTP_GET_VARS['error']) ) {
+        $error_number = $HTTP_GET_VARS['error'];
+      } elseif (isset($HTTP_GET_VARS['crypt']) && tep_not_null($HTTP_GET_VARS['crypt'])) {
+        $transaction_response = $this->decryptParams($HTTP_GET_VARS['crypt']);
 
         $string_array = explode('&', $transaction_response);
         $return = array('Status' => null);
@@ -343,12 +337,14 @@
     }
 
     function check() {
-      return defined('MODULE_PAYMENT_SAGE_PAY_FORM_STATUS');
+      if (!isset($this->_check)) {
+        $check_query = tep_db_query("select configuration_value from " . TABLE_CONFIGURATION . " where configuration_key = 'MODULE_PAYMENT_SAGE_PAY_FORM_STATUS'");
+        $this->_check = tep_db_num_rows($check_query);
+      }
+      return $this->_check;
     }
 
     function install($parameter = null) {
-      $OSCOM_Db = Registry::get('Db');
-
       $params = $this->getParams();
 
       if (isset($parameter)) {
@@ -376,12 +372,12 @@
           $sql_data_array['use_function'] = $data['use_func'];
         }
 
-        $OSCOM_Db->save('configuration', $sql_data_array);
+        tep_db_perform(TABLE_CONFIGURATION, $sql_data_array);
       }
     }
 
     function remove() {
-      return Registry::get('Db')->exec('delete from :table_configuration where configuration_key in ("' . implode('", "', $this->keys()) . '")');
+      tep_db_query("delete from " . TABLE_CONFIGURATION . " where configuration_key in ('" . implode("', '", $this->keys()) . "')");
     }
 
     function keys() {
@@ -399,29 +395,29 @@
     }
 
     function getParams() {
-      $OSCOM_Db = Registry::get('Db');
-
       if (!defined('MODULE_PAYMENT_SAGE_PAY_FORM_TRANSACTION_ORDER_STATUS_ID')) {
-        $Qcheck = $OSCOM_Db->get('orders_status', 'orders_status_id', ['orders_status_name' => 'Sage Pay [Transactions]'], null, 1);
+        $check_query = tep_db_query("select orders_status_id from " . TABLE_ORDERS_STATUS . " where orders_status_name = 'Sage Pay [Transactions]' limit 1");
 
-        if ($Qcheck->fetch() === false) {
-          $Qstatus = $OSCOM_Db->get('orders_status', 'max(orders_status_id) as status_id');
+        if (tep_db_num_rows($check_query) < 1) {
+          $status_query = tep_db_query("select max(orders_status_id) as status_id from " . TABLE_ORDERS_STATUS);
+          $status = tep_db_fetch_array($status_query);
 
-          $status_id = $Qstatus->valueInt('status_id') + 1;
+          $status_id = $status['status_id']+1;
 
           $languages = tep_get_languages();
 
           foreach ($languages as $lang) {
-            $OSCOM_Db->save('orders_status', [
-              'orders_status_id' => $status_id,
-              'language_id' => $lang['id'],
-              'orders_status_name' => 'Sage Pay [Transactions]',
-              'public_flag' => 0,
-              'downloads_flag' => 0
-            ]);
+            tep_db_query("insert into " . TABLE_ORDERS_STATUS . " (orders_status_id, language_id, orders_status_name) values ('" . $status_id . "', '" . $lang['id'] . "', 'Sage Pay [Transactions]')");
+          }
+
+          $flags_query = tep_db_query("describe " . TABLE_ORDERS_STATUS . " public_flag");
+          if (tep_db_num_rows($flags_query) == 1) {
+            tep_db_query("update " . TABLE_ORDERS_STATUS . " set public_flag = 0 and downloads_flag = 0 where orders_status_id = '" . $status_id . "'");
           }
         } else {
-          $status_id = $Qcheck->valueInt('orders_status_id');
+          $check = tep_db_fetch_array($check_query);
+
+          $status_id = $check['orders_status_id'];
         }
       } else {
         $status_id = MODULE_PAYMENT_SAGE_PAY_FORM_TRANSACTION_ORDER_STATUS_ID;
@@ -479,10 +475,10 @@
 
 // format prices without currency formatting
     function format_raw($number, $currency_code = '', $currency_value = '') {
-      global $currencies;
+      global $currencies, $currency;
 
       if (empty($currency_code) || !$currencies->is_set($currency_code)) {
-        $currency_code = $_SESSION['currency'];
+        $currency_code = $currency;
       }
 
       if (empty($currency_value) || !is_numeric($currency_value)) {
@@ -584,6 +580,8 @@
     }
 
     function sendDebugEmail($response = array()) {
+      global $HTTP_POST_VARS, $HTTP_GET_VARS;
+
       if (tep_not_null(MODULE_PAYMENT_SAGE_PAY_FORM_DEBUG_EMAIL)) {
         $email_body = '';
 
@@ -591,12 +589,12 @@
           $email_body .= 'RESPONSE:' . "\n\n" . print_r($response, true) . "\n\n";
         }
 
-        if (!empty($_POST)) {
-          $email_body .= '$_POST:' . "\n\n" . print_r($_POST, true) . "\n\n";
+        if (!empty($HTTP_POST_VARS)) {
+          $email_body .= '$HTTP_POST_VARS:' . "\n\n" . print_r($HTTP_POST_VARS, true) . "\n\n";
         }
 
-        if (!empty($_GET)) {
-          $email_body .= '$_GET:' . "\n\n" . print_r($_GET, true) . "\n\n";
+        if (!empty($HTTP_GET_VARS)) {
+          $email_body .= '$HTTP_GET_VARS:' . "\n\n" . print_r($HTTP_GET_VARS, true) . "\n\n";
         }
 
         if (!empty($email_body)) {
@@ -615,6 +613,6 @@
   }
 
   function sage_pay_form_textarea_field($value = '', $key = '') {
-    return HTML::textareaField('configuration[' . $key . ']', 60, 5, $value);
+    return tep_draw_textarea_field('configuration[' . $key . ']', 'soft', 60, 5, $value);
   }
 ?>

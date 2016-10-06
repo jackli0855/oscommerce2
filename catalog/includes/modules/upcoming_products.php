@@ -5,40 +5,34 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2010 osCommerce
 
   Released under the GNU General Public License
 */
 
-  use OSC\OM\OSCOM;
-
-  $Qupcoming = $OSCOM_Db->prepare('select p.products_id, pd.products_name, products_date_available as date_expected from :table_products p, :table_products_description pd where to_days(p.products_date_available) >= to_days(now()) and p.products_id = pd.products_id and pd.language_id = :language_id order by ' . EXPECTED_PRODUCTS_FIELD . ' ' . EXPECTED_PRODUCTS_SORT . ' limit :limit');
-  $Qupcoming->bindInt(':language_id', $_SESSION['languages_id']);
-  $Qupcoming->bindInt(':limit', MAX_DISPLAY_UPCOMING_PRODUCTS);
-  $Qupcoming->execute();
-
-  if ($Qupcoming->fetch() !== false) {
+  $expected_query = tep_db_query("select p.products_id, pd.products_name, products_date_available as date_expected from " . TABLE_PRODUCTS . " p, " . TABLE_PRODUCTS_DESCRIPTION . " pd where to_days(products_date_available) >= to_days(now()) and p.products_id = pd.products_id and pd.language_id = '" . (int)$languages_id . "' order by " . EXPECTED_PRODUCTS_FIELD . " " . EXPECTED_PRODUCTS_SORT . " limit " . MAX_DISPLAY_UPCOMING_PRODUCTS);
+  if (tep_db_num_rows($expected_query) > 0) {
 ?>
-  <div class="clearfix"></div>
-  <div class="table-responsive">
-    <table class="table table-condensed">
-      <thead>
-        <tr>
-          <th><?php echo TABLE_HEADING_UPCOMING_PRODUCTS; ?></th>
-          <th class="text-right"><?php echo TABLE_HEADING_DATE_EXPECTED; ?></th>
-        </tr>
-      </thead>
-      <tbody>
+
+  <div class="ui-widget infoBoxContainer">
+    <div class="ui-widget-header ui-corner-top infoBoxHeading">
+      <span><?php echo TABLE_HEADING_UPCOMING_PRODUCTS; ?></span>
+      <span style="float: right;"><?php echo TABLE_HEADING_DATE_EXPECTED; ?></span>
+    </div>
+
+    <div class="ui-widget-content ui-corner-bottom">
+      <table border="0" width="100%" cellspacing="0" cellpadding="2" class="productListTable">
 <?php
-  do {
-    echo '        <tr>' . "\n" .
-         '          <td><a href="' . OSCOM::link('product_info.php', 'products_id=' . $Qupcoming->valueInt('products_id')) . '">' . $Qupcoming->value('products_name') . '</a></td>' . "\n" .
-         '          <td class="text-right">' . tep_date_short($Qupcoming->value('date_expected')) . '</td>' . "\n" .
-         '        </tr>' . "\n";
-  } while ($Qupcoming->fetch());
+    while ($expected = tep_db_fetch_array($expected_query)) {
+      echo '        <tr>' . "\n" .
+           '          <td><a href="' . tep_href_link(FILENAME_PRODUCT_INFO, 'products_id=' . $expected['products_id']) . '">' . $expected['products_name'] . '</a></td>' . "\n" .
+           '          <td align="right">' . tep_date_short($expected['date_expected']) . '</td>' . "\n" .
+           '        </tr>' . "\n";
+    }
 ?>
-      </tbody>
-    </table>
+
+      </table>
+    </div>
   </div>
 
 <?php

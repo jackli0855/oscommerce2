@@ -5,24 +5,21 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2010 osCommerce
 
   Released under the GNU General Public License
 */
 
-  use OSC\OM\HTML;
-  use OSC\OM\OSCOM;
-
   require('includes/application_top.php');
 
-  require(DIR_WS_LANGUAGES . $_SESSION['language'] . '/contact_us.php');
+  require(DIR_WS_LANGUAGES . $language . '/' . FILENAME_CONTACT_US);
 
-  if (isset($_GET['action']) && ($_GET['action'] == 'send') && isset($_POST['formid']) && ($_POST['formid'] == $_SESSION['sessiontoken'])) {
+  if (isset($HTTP_GET_VARS['action']) && ($HTTP_GET_VARS['action'] == 'send') && isset($HTTP_POST_VARS['formid']) && ($HTTP_POST_VARS['formid'] == $sessiontoken)) {
     $error = false;
 
-    $name = HTML::sanitize($_POST['name']);
-    $email_address = HTML::sanitize($_POST['email']);
-    $enquiry = HTML::sanitize($_POST['enquiry']);
+    $name = tep_db_prepare_input($HTTP_POST_VARS['name']);
+    $email_address = tep_db_prepare_input($HTTP_POST_VARS['email']);
+    $enquiry = tep_db_prepare_input($HTTP_POST_VARS['enquiry']);
 
     if (!tep_validate_email($email_address)) {
       $error = true;
@@ -30,7 +27,7 @@
       $messageStack->add('contact', ENTRY_EMAIL_ADDRESS_CHECK_ERROR);
     }
 
-    $actionRecorder = new actionRecorder('ar_contact_us', (isset($_SESSION['customer_id']) ? $_SESSION['customer_id'] : null), $name);
+    $actionRecorder = new actionRecorder('ar_contact_us', (tep_session_is_registered('customer_id') ? $customer_id : null), $name);
     if (!$actionRecorder->canPerform()) {
       $error = true;
 
@@ -44,34 +41,32 @@
 
       $actionRecorder->record();
 
-      OSCOM::redirect('contact_us.php', 'action=success');
+      tep_redirect(tep_href_link(FILENAME_CONTACT_US, 'action=success'));
     }
   }
 
-  $breadcrumb->add(NAVBAR_TITLE, OSCOM::link('contact_us.php'));
+  $breadcrumb->add(NAVBAR_TITLE, tep_href_link(FILENAME_CONTACT_US));
 
-  require('includes/template_top.php');
+  require(DIR_WS_INCLUDES . 'template_top.php');
 ?>
 
-<div class="page-header">
-  <h1><?php echo HEADING_TITLE; ?></h1>
-</div>
+<h1><?php echo HEADING_TITLE; ?></h1>
 
 <?php
   if ($messageStack->size('contact') > 0) {
     echo $messageStack->output('contact');
   }
 
-  if (isset($_GET['action']) && ($_GET['action'] == 'success')) {
+  if (isset($HTTP_GET_VARS['action']) && ($HTTP_GET_VARS['action'] == 'success')) {
 ?>
 
 <div class="contentContainer">
-  <div class="alert alert-success">
+  <div class="contentText">
     <?php echo TEXT_SUCCESS; ?>
   </div>
 
-  <div class="text-right">
-    <?php echo HTML::button(IMAGE_BUTTON_CONTINUE, 'glyphicon glyphicon-chevron-right', OSCOM::link('index.php'), 'primary', null, 'btn-default btn-block'); ?>
+  <div style="float: right;">
+    <?php echo tep_draw_button(IMAGE_BUTTON_CONTINUE, 'triangle-1-e', tep_href_link(FILENAME_DEFAULT)); ?>
   </div>
 </div>
 
@@ -79,44 +74,28 @@
   } else {
 ?>
 
-<?php echo HTML::form('contact_us', OSCOM::link('contact_us.php', 'action=send'), 'post', 'class="form-horizontal" role="form"', ['tokenize' => true]); ?>
+<?php echo tep_draw_form('contact_us', tep_href_link(FILENAME_CONTACT_US, 'action=send'), 'post', '', true); ?>
 
 <div class="contentContainer">
-
-  <p class="inputRequirement text-right"><?php echo FORM_REQUIRED_INFORMATION; ?></p>
-
   <div class="contentText">
-    <div class="form-group has-feedback">
-      <label for="inputFromName" class="control-label col-sm-3"><?php echo ENTRY_NAME; ?></label>
-      <div class="col-sm-9">
-        <?php
-        echo HTML::inputField('name', NULL, 'required aria-required="true" autofocus="autofocus" id="inputFromName" placeholder="' . ENTRY_NAME_TEXT . '"');
-        echo FORM_REQUIRED_INPUT;
-        ?>
-      </div>
-    </div>
-    <div class="form-group has-feedback">
-      <label for="inputFromEmail" class="control-label col-sm-3"><?php echo ENTRY_EMAIL; ?></label>
-      <div class="col-sm-9">
-        <?php
-        echo HTML::inputField('email', NULL, 'required aria-required="true" id="inputFromEmail" placeholder="' . ENTRY_EMAIL_ADDRESS_TEXT . '"', 'email');
-        echo FORM_REQUIRED_INPUT;
-        ?>
-      </div>
-    </div>
-    <div class="form-group has-feedback">
-      <label for="inputEnquiry" class="control-label col-sm-3"><?php echo ENTRY_ENQUIRY; ?></label>
-      <div class="col-sm-9">
-        <?php
-        echo HTML::textareaField('enquiry', 50, 15, NULL, 'required aria-required="true" id="inputEnquiry" placeholder="' . ENTRY_ENQUIRY_TEXT . '"');
-        echo FORM_REQUIRED_INPUT;
-        ?>
-      </div>
-    </div>
+    <table border="0" width="100%" cellspacing="0" cellpadding="2">
+      <tr>
+        <td class="fieldKey"><?php echo ENTRY_NAME; ?></td>
+        <td class="fieldValue"><?php echo tep_draw_input_field('name'); ?></td>
+      </tr>
+      <tr>
+        <td class="fieldKey"><?php echo ENTRY_EMAIL; ?></td>
+        <td class="fieldValue"><?php echo tep_draw_input_field('email'); ?></td>
+      </tr>
+      <tr>
+        <td class="fieldKey" valign="top"><?php echo ENTRY_ENQUIRY; ?></td>
+        <td class="fieldValue"><?php echo tep_draw_textarea_field('enquiry', 'soft', 50, 15); ?></td>
+      </tr>
+    </table>
   </div>
 
-  <div class="text-right">
-    <?php echo HTML::button(IMAGE_BUTTON_CONTINUE, 'glyphicon glyphicon-chevron-right', null, 'primary', null, 'btn-success btn-block'); ?>
+  <div class="buttonSet">
+    <span class="buttonAction"><?php echo tep_draw_button(IMAGE_BUTTON_CONTINUE, 'triangle-1-e', null, 'primary'); ?></span>
   </div>
 </div>
 
@@ -125,6 +104,6 @@
 <?php
   }
 
-  require('includes/template_bottom.php');
-  require('includes/application_bottom.php');
+  require(DIR_WS_INCLUDES . 'template_bottom.php');
+  require(DIR_WS_INCLUDES . 'application_bottom.php');
 ?>

@@ -5,7 +5,7 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2002 osCommerce
 
   Released under the GNU General Public License
 
@@ -100,7 +100,8 @@
  **/
     function setHeaders($headers) {
       if (is_array($headers)) {
-        foreach($headers as $name => $value) {
+        reset($headers);
+        while (list($name, $value) = each($headers)) {
           $this->requestHeaders[$name] = $value;
         }
       }
@@ -201,7 +202,8 @@
 
       if (is_array($query_params)) {
         $postArray = array();
-        foreach($query_params as $k => $v) {
+        reset($query_params);
+        while (list($k, $v) = each($query_params)) {
           $postArray[] = urlencode($k) . '=' . urlencode($v);
         }
 
@@ -336,7 +338,8 @@
         $this->request = $command;
         $cmd = $command . "\r\n";
         if (is_array($this->requestHeaders)) {
-          foreach($this->requestHeaders as $k => $v) {
+          reset($this->requestHeaders);
+          while (list($k, $v) = each($this->requestHeaders)) {
             $cmd .= $k . ': ' . $v . "\r\n";
           }
         }

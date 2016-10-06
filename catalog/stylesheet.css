@@ -1,435 +1,413 @@
-/* DO NOT CHANGE THIS FILE -------------------------------------------------- */
-/* TO OVER-RIDE ANY ASPECT OF THIS CSS, AMEND THE user.css FILE ------------- */
+/*
+  $Id$
+
+  osCommerce, Open Source E-Commerce Solutions
+  http://www.oscommerce.com
+
+  Copyright (c) 2010 osCommerce
+
+  Released under the GNU General Public License
+*/
+
+.ui-widget {
+  font-family: Lucida Grande, Lucida Sans, Verdana, Arial, sans-serif;
+  font-size: 11px;
+}
+
+body {
+  background: #fff;
+  color: #000;
+  margin: 0px;
+  font-size: 11px;
+  font-family: Lucida Grande, Lucida Sans, Verdana, Arial, sans-serif;
+}
+
+#bodyWrapper {
+}
 
 #bodyContent {
-  padding-bottom: 20px;
+}
+
+#header {
+  height: 60px;
 }
 
 #storeLogo {
+  float: left;
   margin-top: 5px;
 }
 
 #headerShortcuts {
+  float: right;
   margin-top: 15px;
 }
 
-s, del {
-  color: silver;
+#columnLeft {
+  padding-top: 5px;
 }
 
-.productSpecialPrice, .inputRequirement {
-  color: red;
+#columnRight {
+  padding-top: 5px;
 }
 
-.piGal {
-  width: 250px !important;
-  margin-bottom: 20px;
+.infoBoxContainer { }
+
+.infoBoxHeading {
+  padding: 2px;
+  font-size: 11px;
 }
 
-/* Account History Info ----------------------------------------------------- */
-.timeline {
-  list-style: none;
-  padding: 20px 0 20px;
-  position: relative;
+.infoBoxContents {
+  padding: 5px;
+  font-size: 11px;
+  line-height: 1.5;
 }
-.timeline:before {
-  top: 0;
-  bottom: 0;
-  position: absolute;
-  content: " ";
-  width: 3px;
-  background-color: #eeeeee;
-  right: 25px;
-  margin-left: -1.5px;
+
+.contentContainer {
+  padding-bottom: 10px;
 }
-.timeline > li {
-  margin-bottom: 20px;
-  position: relative;
+
+.contentContainer h2 {
+  font-size: 16px;
+  text-decoration: underline;
+  font-weight: normal;
+  margin-bottom: 0;
+  padding-bottom: 5px;
 }
-.timeline > li:before,
-.timeline > li:after {
-  content: " ";
-  display: table;
+
+.contentText, .contentText table {
+  padding: 5px 0 5px 0;
+  font-size: 11px;
+  line-height: 1.5;
 }
-.timeline > li:after {
+
+.productListTable {
+  padding: 5px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.productListTable tr.alt td {
+  background-color: #ecf6fc;
+}
+
+.fieldKey {
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1.5;
+  width: 150px;
+}
+
+.fieldValue {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+h1 {
+  font-size: 20px;
+  margin-bottom: 0;
+  padding-bottom: 5px;
+}
+
+img {
+  border: 0;
+}
+
+table, p {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+#piGal {
+  float: right;
+  width: 250px;
+}
+
+#piGal img {
+  max-width: 250px;
+  height: auto;
+}
+
+.buttonSet {
   clear: both;
 }
-.timeline > li:before,
-.timeline > li:after {
-  content: " ";
-  display: table;
-}
-.timeline > li:after {
-  clear: both;
-}
-.timeline > li > .timeline-panel {
-  width: calc( 100% - 75px );
-  float: left;
-  border: 1px solid #d4d4d4;
-  border-radius: 2px;
-  padding: 20px;
-  position: relative;
-  -webkit-box-shadow: 0 1px 6px rgba(0, 0, 0, 0.175);
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.175);
-}
-.timeline > li > .timeline-panel:before {
-  position: absolute;
-  top: 26px;
-  right: -15px;
-  display: inline-block;
-  border-top: 15px solid transparent;
-  border-left: 15px solid #ccc;
-  border-right: 0 solid #ccc;
-  border-bottom: 15px solid transparent;
-  content: " ";
-}
-.timeline > li > .timeline-panel:after {
-  position: absolute;
-  top: 27px;
-  right: -14px;
-  display: inline-block;
-  border-top: 14px solid transparent;
-  border-left: 14px solid #fff;
-  border-right: 0 solid #fff;
-  border-bottom: 14px solid transparent;
-  content: " ";
-}
-.timeline > li > .timeline-badge {
-  color: #fff;
-  width: 50px;
-  height: 50px;
-  line-height: 50px;
-  font-size: 1.4em;
-  text-align: center;
-  position: absolute;
-  top: 16px;
-  right: 0px;
-  margin-left: -25px;
-  background-color: #999999;
-  z-index: 100;
-  border-top-right-radius: 50%;
-  border-top-left-radius: 50%;
-  border-bottom-right-radius: 50%;
-  border-bottom-left-radius: 50%;
-}
-.timeline > li.timeline-inverted > .timeline-panel {
+
+.buttonAction {
   float: right;
 }
-.timeline > li.timeline-inverted > .timeline-panel:before {
-  border-left-width: 0;
-  border-right-width: 15px;
-  left: -15px;
-  right: auto;
-}
-.timeline > li.timeline-inverted > .timeline-panel:after {
-  border-left-width: 0;
-  border-right-width: 14px;
-  left: -14px;
-  right: auto;
-}
-.timeline-badge.primary {
-  background-color: #2e6da4 !important;
-}
-.timeline-badge.success {
-  background-color: #3f903f !important;
-}
-.timeline-badge.warning {
-  background-color: #f0ad4e !important;
-}
-.timeline-badge.danger {
-  background-color: #d9534f !important;
-}
-.timeline-badge.info {
-  background-color: #5bc0de !important;
-}
-.timeline-title {
-  margin-top: 0;
-  color: inherit;
-}
-.timeline-body > p .timeline-body > ul {
-  margin-bottom: 0;
-}
-.timeline-body > p + p {
-  margin-top: 5px;
-}
-.timeline-body blockquote {
-  font-size: 1em;
+
+.boxText { font-family: Verdana, Arial, sans-serif; font-size: 10px; }
+.errorBox { font-family : Verdana, Arial, sans-serif; font-size : 10px; background: #ffb3b5; font-weight: bold; }
+.stockWarning { font-family : Verdana, Arial, sans-serif; font-size : 10px; color: #cc0033; }
+.productsNotifications { background: #f2fff7; }
+.orderEdit { font-family : Verdana, Arial, sans-serif; font-size : 10px; color: #70d250; text-decoration: underline; }
+
+A {
+  color: #000000;
+  text-decoration: none;
 }
 
-.info-box {
-  min-height: 160px;
-}
-
-.review blockquote p {
-  font-size: small;
-}
-
-.review blockquote footer {
-  margin-top: 10px;
-}
-
-/* Checkout Bar ------------------------------------------------------------- */
-.stepwizard {
-  margin-top: 20px;
-}
-
-.stepwizard-step p {
-    margin-top: 10px;
-}
-
-.stepwizard-row {
-    display: table-row;
-}
-
-.stepwizard {
-    display: table;
-    width: 100%;
-    position: relative;
-}
-
-.stepwizard-step button[disabled] {
-    opacity: 1 !important;
-    filter: alpha(opacity=100) !important;
-}
-
-.stepwizard-row:before {
-    top: 14px;
-    bottom: 0;
-    position: absolute;
-    content: " ";
-    width: 100%;
-    height: 1px;
-    background-color: #ccc;
-    z-index: 0;
-}
-
-.stepwizard-step {
-    display: table-cell;
-    text-align: center;
-    position: relative;
-    width: 33%;
-}
-
-.btn-circle {
-  width: 30px;
-  height: 30px;
-  text-align: center;
-  padding: 6px 0;
-  font-size: 12px;
-  line-height: 1.428571429;
-  border-radius: 15px;
-}
-
-/* Responsive Images  ------------------------------------------------------- */
-/* the inbuilt bootstrap responsive images class breaks the text-center class */
-
-#bodyContent .img-responsive, #columnLeft .img-responsive, #columnRight .img-responsive, footer .img-responsive {
-  margin-left: auto;
-  margin-right: auto;
-}
-
-/* Footer  ------------------------------------------------------------------ */
-
-footer .footer {
-  border-top: 2px solid #ddd;
-  background: #eee;
-}
-
-footer .footer h2 {
-  padding: 0;
-  margin-top: 10px;
-  font-size: 1em !important;
-  letter-spacing: 0.1em;
-  color: rgb(142,11,0);
-  text-shadow: 1px 1px 1px rgba(255,255,255,0.6);
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-}
-
-footer .footer-extra {
-  background: #3D3D3D;
-  border-top: 1px solid #1f1f1f;
-  color: white;
-  padding-top: 10px;
-}
-
-footer .footer-extra A {
-  color: white;
+A:hover {
   text-decoration: underline;
 }
 
-
-
-
-
-
-
-
-
-/* Nav Bars ----------------------------------------------------------------- */
-
-.navbar-no-corners {
-  border-radius: 0 !important;
-  -moz-border-radius: 0 !important;
-  border-left: none;
-  border-right: none;
+FORM {
+	display: inline;
 }
 
-.navbar-no-margin {
-  margin-bottom: 0 !important;
+TR.header {
+  background: #ffffff;
 }
 
-/* searchbox ---------------------------------------------------------------- */
-
-.searchbox-margin {
-  margin-top: 10px;
-  margin-bottom: 10px;
+TR.headerNavigation {
+  background: #bbc3d3;
 }
 
-/* for the listings module rework ------------------------------------------- */
-
-.productHolder {
-  border: 1px solid #eee;
-  padding: 10px;
-  border-radius: 4px;
-  -webkit-transition: border .5s ease-in-out;
-       -o-transition: border .5s ease-in-out;
-          transition: border .5s ease-in-out;
+TD.headerNavigation {
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 10px;
+  background: #bbc3d3;
+  color: #ffffff;
+  font-weight : bold;
 }
 
-.productHolder:hover {
-  border: 1px solid #428bca;
+A.headerNavigation { 
+  color: #FFFFFF; 
 }
 
-.productHolder h2 {
-  font-size: 1.3em;
+A.headerNavigation:hover {
+  color: #ffffff;
 }
 
-.item.list-group-item {
-    float: none;
-    width: 100%;
-    background-color: #fff;
-    border: none;
+TR.headerError {
+  background: #ff0000;
 }
 
-.item.list-group-item img {
-    float: left !important;
-    margin-right: 10px !important;
+TD.headerError {
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-size: 12px;
+  background: #ff0000;
+  color: #ffffff;
+  font-weight : bold;
+  text-align : center;
 }
 
-.grid-group-item {
-  margin-bottom: 20px;
+TR.headerInfo {
+  background: #00ff00;
 }
 
-.grid-group-item .list-group-item-text {
-  display: none;
+TD.headerInfo {
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-size: 12px;
+  background: #00ff00;
+  color: #ffffff;
+  font-weight: bold;
+  text-align: center;
 }
 
-p.lead del {
-  font-size: 0.5em;
+TR.footer {
+  background: #bbc3d3;
 }
 
-/* Pagination  ------------------------------------------------------- */
-.pagenav {
-   position: relative;
-   top:-25px;
-   left:3px;
-   height: 40px !important;
-}
-.pagenumber {
-  margin-bottom:7px;
+TD.footer {
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 10px;
+  background: #bbc3d3;
+  color: #ffffff;
+  font-weight: bold;
 }
 
-/* Responsive Text Alignment ------------------------------------------------ */
-/* https://github.com/twbs/bootstrap/issues/11292 --------------------------- */
-
-.text-left-not-xs, .text-left-not-sm, .text-left-not-md, .text-left-not-lg {
-    text-align: left;
-}
-.text-center-not-xs, .text-center-not-sm, .text-center-not-md, .text-center-not-lg {
-    text-align: center;
-}
-.text-right-not-xs, .text-right-not-sm, .text-right-not-md, .text-right-not-lg {
-    text-align: right;
-}
-.text-justify-not-xs, .text-justify-not-sm, .text-justify-not-md, .text-justify-not-lg {
-    text-align: justify;
+.infoBox {
+  background: #b6b7cb;
 }
 
-@media (max-width: 767px) {
-    .text-left-not-xs, .text-center-not-xs, .text-right-not-xs, .text-justify-not-xs {
-        text-align: inherit;
-    }
-    .text-left-xs {
-        text-align: left;
-    }
-    .text-center-xs {
-        text-align: center;
-    }
-    .text-right-xs {
-        text-align: right;
-    }
-    .text-justify-xs {
-        text-align: justify;
-    }
-}
-@media (min-width: 768px) and (max-width: 991px) {
-    .text-left-not-sm, .text-center-not-sm, .text-right-not-sm, .text-justify-not-sm {
-        text-align: inherit;
-    }
-    .text-left-sm {
-        text-align: left;
-    }
-    .text-center-sm {
-        text-align: center;
-    }
-    .text-right-sm {
-        text-align: right;
-    }
-    .text-justify-sm {
-        text-align: justify;
-    }
-}
-@media (min-width: 992px) and (max-width: 1199px) {
-    .text-left-not-md, .text-center-not-md, .text-right-not-md, .text-justify-not-md {
-        text-align: inherit;
-    }
-    .text-left-md {
-        text-align: left;
-    }
-    .text-center-md {
-        text-align: center;
-    }
-    .text-right-md {
-        text-align: right;
-    }
-    .text-justify-md {
-        text-align: justify;
-    }
-}
-@media (min-width: 1200px) {
-    .text-left-not-lg, .text-center-not-lg, .text-right-not-lg, .text-justify-not-lg {
-        text-align: inherit;
-    }
-    .text-left-lg {
-        text-align: left;
-    }
-    .text-center-lg {
-        text-align: center;
-    }
-    .text-right-lg {
-        text-align: right;
-    }
-    .text-justify-lg {
-        text-align: justify;
-    }
+.infoBoxNotice {
+  background: #FF8E90;
 }
 
-/* reviews ------------------------------------------------------------------ */
-
-.reviews blockquote p {
-  font-size: 0.9em !important;
+.infoBoxNoticeContents {
+  background: #FFE6E6;
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 10px;
 }
 
+TD.infoBoxHeading {
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 10px;
+  font-weight: bold;
+  background: #bbc3d3;
+  color: #ffffff;
+}
+
+TD.infoBox, SPAN.infoBox {
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 10px;
+}
+
+TR.accountHistory-odd, TR.addressBook-odd, TR.alsoPurchased-odd, TR.payment-odd, TR.productListing-odd, TR.productReviews-odd, TR.upcomingProducts-odd, TR.shippingOptions-odd {
+  background: #f8f8f9;
+}
+
+TR.accountHistory-even, TR.addressBook-even, TR.alsoPurchased-even, TR.payment-even, TR.productListing-even, TR.productReviews-even, TR.upcomingProducts-even, TR.shippingOptions-even {
+  background: #f8f8f9;
+}
+
+TABLE.productListing {
+  border: 1px;
+  border-style: solid;
+  border-color: #b6b7cb;
+  border-spacing: 1px;
+}
+
+.productListingHeader {
+  table-layout: fixed;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+.productListingHeader A:hover {
+  color: #FFFFFF;
+}
+
+.productListingData {
+  table-layout: fixed;
+}
+
+A.pageResults {
+  color: #0000FF;
+}
+
+A.pageResults:hover {
+  color: #0000FF;
+  background: #FFFF33;
+}
+
+TD.pageHeading, DIV.pageHeading {
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 20px;
+  font-weight: bold;
+  color: #9a9a9a;
+}
+
+TR.subBar {
+  background: #f4f7fd;
+}
+
+TD.subBar {
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 10px;
+  color: #000000;
+}
+
+TD.main, P.main {
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+TD.smallText, SPAN.smallText, P.smallText {
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 10px;
+}
+
+TD.accountCategory {
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 13px;
+  color: #aabbdd;
+}
+
+TD.tableHeading {
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+SPAN.newItemInCart {
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 10px;
+  color: #ff0000;
+}
+
+CHECKBOX, INPUT, RADIO, SELECT {
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 11px;
+}
+
+TEXTAREA {
+  width: 100%;
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 11px;
+}
+
+SPAN.greetUser {
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 12px;
+  color: #f0a480;
+  font-weight: bold;
+}
+
+TABLE.formArea {
+  background: #f1f9fe;
+  border-color: #7b9ebd;
+  border-style: solid;
+  border-width: 1px;
+}
+
+TD.formAreaTitle {
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+SPAN.markProductOutOfStock {
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+  font-size: 12px;
+  color: #c76170;
+  font-weight: bold;
+}
+
+SPAN.productSpecialPrice {
+  font-family: Verdana, Arial, sans-serif;
+  color: #ff0000;
+}
+
+SPAN.errorText {
+  font-family: Verdana, Arial, sans-serif;
+  color: #ff0000;
+}
+
+.moduleRow { }
+.moduleRowOver { background-color: #D7E9F7; cursor: pointer; cursor: hand; }
+.moduleRowSelected { background-color: #E9F4FC; }
+
+.checkoutBarFrom, .checkoutBarTo { font-family: Verdana, Arial, sans-serif; font-size: 10px; color: #8c8c8c; }
+.checkoutBarCurrent { font-family: Verdana, Arial, sans-serif; font-size: 10px; color: #000000; }
+
+/* message box */
+
+.messageBox { font-family: Verdana, Arial, sans-serif; font-size: 10px; }
+.messageStackError, .messageStackWarning { font-family: Verdana, Arial, sans-serif; font-size: 10px; background-color: #ffb3b5; }
+.messageStackSuccess { font-family: Verdana, Arial, sans-serif; font-size: 10px; background-color: #99ff00; }
+
+/* input requirement */
+
+.inputRequirement { font-family: Verdana, Arial, sans-serif; font-size: 10px; color: #ff0000; }
+
+/* buttons */
+
+.tdbLink a { }
+
+.tdbLink button { }
+
+/* account link list */
+
+.accountLinkList {
+  list-style-type: none;
+  margin: 2px 2px 2px 10px;
+  padding: 5px;
+}
+
+.accountLinkListEntry {
+  float: left;
+  margin-right: 5px;
+}

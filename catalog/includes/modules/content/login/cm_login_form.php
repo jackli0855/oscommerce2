@@ -5,14 +5,10 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2014 osCommerce
 
   Released under the GNU General Public License
 */
-
-  use OSC\OM\HTML;
-  use OSC\OM\OSCOM;
-  use OSC\OM\Registry;
 
   class cm_login_form {
     var $code;
@@ -36,32 +32,31 @@
     }
 
     function execute() {
-      global $login_customer_id, $messageStack, $oscTemplate;
-
-      $OSCOM_Db = Registry::get('Db');
+      global $HTTP_GET_VARS, $HTTP_POST_VARS, $sessiontoken, $login_customer_id, $messageStack, $oscTemplate;
 
       $error = false;
 
-      if (OSCOM::hasRoute(['Account', 'LogIn', 'Process']) && isset($_POST['formid']) && ($_POST['formid'] == $_SESSION['sessiontoken'])) {
-        $email_address = HTML::sanitize($_POST['email_address']);
-        $password = HTML::sanitize($_POST['password']);
+      if (isset($HTTP_GET_VARS['action']) && ($HTTP_GET_VARS['action'] == 'process') && isset($HTTP_POST_VARS['formid']) && ($HTTP_POST_VARS['formid'] == $sessiontoken)) {
+        $email_address = tep_db_prepare_input($HTTP_POST_VARS['email_address']);
+        $password = tep_db_prepare_input($HTTP_POST_VARS['password']);
 
 // Check if email exists
-        $Qcustomer = $OSCOM_Db->get('customers', ['customers_id', 'customers_password'], ['customers_email_address' => $email_address], null, 1);
-
-        if ($Qcustomer->fetch() === false) {
+        $customer_query = tep_db_query("select customers_id, customers_password from " . TABLE_CUSTOMERS . " where customers_email_address = '" . tep_db_input($email_address) . "' limit 1");
+        if (!tep_db_num_rows($customer_query)) {
           $error = true;
         } else {
+          $customer = tep_db_fetch_array($customer_query);
+
 // Check that password is good
-          if (!tep_validate_password($password, $Qcustomer->value('customers_password'))) {
+          if (!tep_validate_password($password, $customer['customers_password'])) {
             $error = true;
           } else {
-// set $login_customer_id globally and perform post login code in Shop/Account/Actions/LogIn
-            $login_customer_id = $Qcustomer->valueInt('customers_id');
+// set $login_customer_id globally and perform post login code in catalog/login.php
+            $login_customer_id = (int)$customer['customers_id'];
 
 // migrate old hashed password to new phpass password
-            if (tep_password_type($Qcustomer->value('customers_password')) != 'phpass') {
-              $OSCOM_Db->save('customers', ['customers_password' => tep_encrypt_password($password)], ['customers_id' => $login_customer_id]);
+            if (tep_password_type($customer['customers_password']) != 'phpass') {
+              tep_db_query("update " . TABLE_CUSTOMERS . " set customers_password = '" . tep_encrypt_password($password) . "' where customers_id = '" . (int)$login_customer_id . "'");
             }
           }
         }
@@ -87,43 +82,13 @@
     }
 
     function install() {
-      $OSCOM_Db = Registry::get('Db');
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Enable Login Form Module',
-        'configuration_key' => 'MODULE_CONTENT_LOGIN_FORM_STATUS',
-        'configuration_value' => 'True',
-        'configuration_description' => 'Do you want to enable the login form module?',
-        'configuration_group_id' => '6',
-        'sort_order' => '1',
-        'set_function' => 'tep_cfg_select_option(array(\'True\', \'False\'), ',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Content Width',
-        'configuration_key' => 'MODULE_CONTENT_LOGIN_FORM_CONTENT_WIDTH',
-        'configuration_value' => 'Half',
-        'configuration_description' => 'Should the content be shown in a full or half width container?',
-        'configuration_group_id' => '6',
-        'sort_order' => '1',
-        'set_function' => 'tep_cfg_select_option(array(\'Full\', \'Half\'), ',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Sort Order',
-        'configuration_key' => 'MODULE_CONTENT_LOGIN_FORM_SORT_ORDER',
-        'configuration_value' => '0',
-        'configuration_description' => 'Sort order of display. Lowest is displayed first.',
-        'configuration_group_id' => '6',
-        'sort_order' => '0',
-        'date_added' => 'now()'
-      ]);
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable Login Form Module', 'MODULE_CONTENT_LOGIN_FORM_STATUS', 'True', 'Do you want to enable the login form module?', '6', '1', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Content Width', 'MODULE_CONTENT_LOGIN_FORM_CONTENT_WIDTH', 'Half', 'Should the content be shown in a full or half width container?', '6', '1', 'tep_cfg_select_option(array(\'Full\', \'Half\'), ', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Sort Order', 'MODULE_CONTENT_LOGIN_FORM_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', '6', '0', now())");
     }
 
     function remove() {
-      return Registry::get('Db')->exec('delete from :table_configuration where configuration_key in ("' . implode('", "', $this->keys()) . '")');
+      tep_db_query("delete from " . TABLE_CONFIGURATION . " where configuration_key in ('" . implode("', '", $this->keys()) . "')");
     }
 
     function keys() {

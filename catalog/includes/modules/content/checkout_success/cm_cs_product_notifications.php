@@ -5,13 +5,10 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2014 osCommerce
 
   Released under the GNU General Public License
 */
-
-  use OSC\OM\HTML;
-  use OSC\OM\Registry;
 
   class cm_cs_product_notifications {
     var $code;
@@ -35,28 +32,23 @@
     }
 
     function execute() {
-      global $oscTemplate, $order_id;
+      global $HTTP_GET_VARS, $HTTP_POST_VARS, $oscTemplate, $customer_id, $order_id;
 
-      $OSCOM_Db = Registry::get('Db');
+      if ( tep_session_is_registered('customer_id') ) {
+        $global_query = tep_db_query("select global_product_notifications from " . TABLE_CUSTOMERS_INFO . " where customers_info_id = '" . (int)$customer_id . "'");
+        $global = tep_db_fetch_array($global_query);
 
-      if ( isset($_SESSION['customer_id']) ) {
-        $Qglobal = $OSCOM_Db->get('customers_info', 'global_product_notifications', ['customers_info_id' => $_SESSION['customer_id']]);
-
-        if ( $Qglobal->valueInt('global_product_notifications') !== 1 ) {
-          if ( isset($_GET['action']) && ($_GET['action'] == 'update') ) {
-            if ( isset($_POST['notify']) && is_array($_POST['notify']) && !empty($_POST['notify']) ) {
-              $notify = array_unique($_POST['notify']);
+        if ( $global['global_product_notifications'] != '1' ) {
+          if ( isset($HTTP_GET_VARS['action']) && ($HTTP_GET_VARS['action'] == 'update') ) {
+            if ( isset($HTTP_POST_VARS['notify']) && is_array($HTTP_POST_VARS['notify']) && !empty($HTTP_POST_VARS['notify']) ) {
+              $notify = array_unique($HTTP_POST_VARS['notify']);
 
               foreach ( $notify as $n ) {
                 if ( is_numeric($n) && ($n > 0) ) {
-                  $Qcheck = $OSCOM_Db->get('products_notifications', 'products_id', ['products_id' => $n, 'customers_id' => $_SESSION['customer_id']], null, 1);
+                  $check_query = tep_db_query("select products_id from " . TABLE_PRODUCTS_NOTIFICATIONS . " where products_id = '" . (int)$n . "' and customers_id = '" . (int)$customer_id . "' limit 1");
 
-                  if ( $Qcheck->fetch() === false ) {
-                    $OSCOM_Db->save('products_notifications', [
-                      'products_id' => $n,
-                      'customers_id' => $_SESSION['customer_id'],
-                      'date_added' => 'now()'
-                    ]);
+                  if ( !tep_db_num_rows($check_query) ) {
+                    tep_db_query("insert into " . TABLE_PRODUCTS_NOTIFICATIONS . " (products_id, customers_id, date_added) values ('" . (int)$n . "', '" . (int)$customer_id . "', now())");
                   }
                 }
               }
@@ -65,18 +57,10 @@
 
           $products_displayed = array();
 
-          $Qproducts = $OSCOM_Db->get('orders_products', ['products_id', 'products_name'], ['orders_id' => $order_id], 'products_name');
-
-          while ($Qproducts->fetch()) {
-            if ( !isset($products_displayed[$Qproducts->valueInt('products_id')]) ) {
-              $products_displayed[$Qproducts->valueInt('products_id')]  = '<div class="form-group">' .
-                                                                          '  <label class="control-label col-xs-3">' . $Qproducts->value('products_name') . '</label>' .
-                                                                          '  <div class="col-xs-9">' .
-                                                                          '    <div class="checkbox">' .
-                                                                          '      <label>' . HTML::checkboxField('notify[]', $Qproducts->valueInt('products_id')) . '&nbsp;</label>' .
-                                                                          '    </div>' .
-                                                                          '  </div>' .
-                                                                          '</div>';
+          $products_query = tep_db_query("select products_id, products_name from " . TABLE_ORDERS_PRODUCTS . " where orders_id = '" . (int)$order_id . "' order by products_name");
+          while ($products = tep_db_fetch_array($products_query)) {
+            if ( !isset($products_displayed[$products['products_id']]) ) {
+              $products_displayed[$products['products_id']] = tep_draw_checkbox_field('notify[]', $products['products_id']) . ' ' . $products['products_name'];
             }
           }
 
@@ -100,32 +84,12 @@
     }
 
     function install() {
-      $OSCOM_Db = Registry::get('Db');
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Enable Product Notifications Module',
-        'configuration_key' => 'MODULE_CONTENT_CHECKOUT_SUCCESS_PRODUCT_NOTIFICATIONS_STATUS',
-        'configuration_value' => 'True',
-        'configuration_description' => 'Should the product notifications block be shown on the checkout success page?',
-        'configuration_group_id' => '6',
-        'sort_order' => '1',
-        'set_function' => 'tep_cfg_select_option(array(\'True\', \'False\'), ',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Sort Order',
-        'configuration_key' => 'MODULE_CONTENT_CHECKOUT_SUCCESS_PRODUCT_NOTIFICATIONS_SORT_ORDER',
-        'configuration_value' => '0',
-        'configuration_description' => 'Sort order of display. Lowest is displayed first.',
-        'configuration_group_id' => '6',
-        'sort_order' => '0',
-        'date_added' => 'now()'
-      ]);
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable Product Notifications Module', 'MODULE_CONTENT_CHECKOUT_SUCCESS_PRODUCT_NOTIFICATIONS_STATUS', 'True', 'Should the product notifications block be shown on the checkout success page?', '6', '1', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Sort Order', 'MODULE_CONTENT_CHECKOUT_SUCCESS_PRODUCT_NOTIFICATIONS_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', '6', '3', now())");
     }
 
     function remove() {
-      return Registry::get('Db')->exec('delete from :table_configuration where configuration_key in ("' . implode('", "', $this->keys()) . '")');
+      tep_db_query("delete from " . TABLE_CONFIGURATION . " where configuration_key in ('" . implode("', '", $this->keys()) . "')");
     }
 
     function keys() {

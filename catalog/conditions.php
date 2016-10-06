@@ -5,38 +5,33 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2010 osCommerce
 
   Released under the GNU General Public License
 */
 
-  use OSC\OM\HTML;
-  use OSC\OM\OSCOM;
-
   require('includes/application_top.php');
 
-  require(DIR_WS_LANGUAGES . $_SESSION['language'] . '/conditions.php');
+  require(DIR_WS_LANGUAGES . $language . '/' . FILENAME_CONDITIONS);
 
-  $breadcrumb->add(NAVBAR_TITLE, OSCOM::link('conditions.php'));
+  $breadcrumb->add(NAVBAR_TITLE, tep_href_link(FILENAME_CONDITIONS));
 
-  require('includes/template_top.php');
+  require(DIR_WS_INCLUDES . 'template_top.php');
 ?>
 
-<div class="page-header">
-  <h1><?php echo HEADING_TITLE; ?></h1>
-</div>
+<h1><?php echo HEADING_TITLE; ?></h1>
 
 <div class="contentContainer">
   <div class="contentText">
     <?php echo TEXT_INFORMATION; ?>
   </div>
 
-  <div class="text-right">
-    <?php echo HTML::button(IMAGE_BUTTON_CONTINUE, 'glyphicon glyphicon-chevron-right', OSCOM::link('index.php')); ?>
+  <div class="buttonSet">
+    <span class="buttonAction"><?php echo tep_draw_button(IMAGE_BUTTON_CONTINUE, 'triangle-1-e', tep_href_link(FILENAME_DEFAULT)); ?></span>
   </div>
 </div>
 
 <?php
-  require('includes/template_bottom.php');
-  require('includes/application_bottom.php');
+  require(DIR_WS_INCLUDES . 'template_bottom.php');
+  require(DIR_WS_INCLUDES . 'application_bottom.php');
 ?>

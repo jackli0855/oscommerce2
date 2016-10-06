@@ -48,7 +48,8 @@
         $this->lf = "\n";
       }
 
-      foreach ( $params as $key => $value ) {
+      reset($params);
+      while (list($key, $value) = each($params)) {
         switch ($key) {
           case 'content_type':
             $headers['Content-Type'] = $value . (isset($charset) ? '; charset="' . $charset . '"' : '');
@@ -90,6 +91,8 @@
 
 // Assign stuff to member variables
       $this->_encoded = array();
+/* HPDL PHP3 */
+//      $this->_headers  =& $headers;
       $this->_headers = $headers;
       $this->_body = $body;
     }
@@ -107,6 +110,8 @@
  */
 
     function encode() {
+/* HPDL PHP3 */
+//      $encoded =& $this->_encoded;
       $encoded = $this->_encoded;
 
       if (tep_not_null($this->_subparts)) {
@@ -116,10 +121,13 @@
 // Add body parts to $subparts
         for ($i=0; $i<count($this->_subparts); $i++) {
           $headers = array();
+/* HPDL PHP3 */
+//          $tmp = $this->_subparts[$i]->encode();
           $_subparts = $this->_subparts[$i];
           $tmp = $_subparts->encode();
 
-          foreach( $tmp['headers'] as $key => $value ) {
+          reset($tmp['headers']);
+          while (list($key, $value) = each($tmp['headers'])) {
             $headers[] = $key . ': ' . $value;
           }
 
@@ -132,13 +140,15 @@
       }
 
 // Add headers to $encoded
+/* HPDL PHP3 */
+//      $encoded['headers'] =& $this->_headers;
       $encoded['headers'] = $this->_headers;
 
       return $encoded;
     }
 
 /**
- * addSubPart()
+ * &addSubPart()
  * 
  * Adds a subpart to current mime part and returns
  * a reference to it
@@ -153,6 +163,8 @@
  * @access public
  */
 
+/* HPDL PHP3 */
+//    function &addSubPart($body, $params) {
     function addSubPart($body, $params) {
       $this->_subparts[] = new mime($body, $params);
 
@@ -202,7 +214,7 @@
       $escape = '=';
       $output = '';
 
-      foreach ( $lines as $line) {
+      while (list(, $line) = each($lines)) {
         $linlen = strlen($line);
         $newline = '';
 

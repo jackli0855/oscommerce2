@@ -5,12 +5,10 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2013 osCommerce
 
   Released under the GNU General Public License
 */
-
-  use OSC\OM\HTML;
 ?>
 
 <script>
@@ -20,7 +18,6 @@
   var dbUsername;
   var dbPassword;
   var dbName;
-  var dbNameToCreate;
 
   var formSubmited = false;
   var formSuccess = false;
@@ -34,32 +31,26 @@
 
     $('#mBox').show();
 
-    $('#mBoxContents').html('<p><i class="fa fa-spinner fa-spin fa-2x"></i> Testing database connection..</p>');
+    $('#mBoxContents').html('<p><img src="images/progress.gif" align="right" hspace="5" vspace="5" />Testing database connection..</p>');
 
-    dbServer = $('#dbServer').val();
-    dbUsername = $('#userName').val();
-    dbPassword = $('#passWord').val();
-    dbName = $('#dbName').val();
+    dbServer = $('#DB_SERVER').val();
+    dbUsername = $('#DB_SERVER_USERNAME').val();
+    dbPassword = $('#DB_SERVER_PASSWORD').val();
+    dbName = $('#DB_DATABASE').val();
 
-    var dbCheckUrl = 'rpc.php?action=dbCheck&server=' + encodeURIComponent(dbServer) + '&username=' + encodeURIComponent(dbUsername) + '&password=' + encodeURIComponent(dbPassword) + '&name=' + encodeURIComponent(dbName);
-
-    if (dbName == dbNameToCreate) {
-      dbCheckUrl = dbCheckUrl + '&createDb=true';
-    }
-
-    $.get(dbCheckUrl, function (response) {
+    $.get('rpc.php?action=dbCheck&server=' + encodeURIComponent(dbServer) + '&username=' + encodeURIComponent(dbUsername) + '&password=' + encodeURIComponent(dbPassword) + '&name=' + encodeURIComponent(dbName), function (response) {
       var result = /\[\[([^|]*?)(?:\|([^|]*?)){0,1}\]\]/.exec(response);
       result.shift();
 
-      if ((result[0] == '1') && (result[1] == 'success')) {
-        $('#mBoxContents').html('<p><i class="fa fa-spinner fa-spin fa-2x"></i> The database structure is now being imported. Please be patient during this procedure.</p>');
+      if (result[0] == '1') {
+        $('#mBoxContents').html('<p><img src="images/progress.gif" align="right" hspace="5" vspace="5" />The database structure is now being imported. Please be patient during this procedure.</p>');
 
         $.get('rpc.php?action=dbImport&server=' + encodeURIComponent(dbServer) + '&username=' + encodeURIComponent(dbUsername) + '&password='+ encodeURIComponent(dbPassword) + '&name=' + encodeURIComponent(dbName), function (response2) {
           var result2 = /\[\[([^|]*?)(?:\|([^|]*?)){0,1}\]\]/.exec(response2);
           result2.shift();
 
           if (result2[0] == '1') {
-            $('#mBoxContents').html('<p class="text-success"><i class="fa fa-thumbs-up fa-2x"></i> Database imported successfully.</p>');
+            $('#mBoxContents').html('<p><img src="images/success.gif" align="right" hspace="5" vspace="5" />Database imported successfully.</p>');
 
             formSuccess = true;
 
@@ -69,7 +60,7 @@
           } else {
             var result2_error = result2[1].replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-            $('#mBoxContents').html('<p class="text-danger"><i class="fa fa-thumbs-down fa-2x text-danger"></i> There was a problem importing the database. The following error had occured:</p><p  class="text-danger"><strong>%s</strong></p><p class="text-danger">Please verify the connection parameters and try again.</p>'.replace('%s', result2_error));
+            $('#mBoxContents').html('<p><img src="images/failed.gif" align="right" hspace="5" vspace="5" />There was a problem importing the database. The following error had occured:</p><p><strong>%s</strong></p><p>Please verify the connection parameters and try again.</p>'.replace('%s', result2_error));
 
             formSubmited = false;
           }
@@ -77,17 +68,9 @@
           formSubmited = false;
         });
       } else {
-        if ((result[0] == '1049') && (dbName != dbNameToCreate)) {
-          dbNameToCreate = dbName;
+        var result_error = result[1].replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-          var result_error = 'The database name of \'' + dbName.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') + '\' does not exist. If you submit the form again with the same database name, an attempt will be made to create it.';
-
-          $('#mBoxContents').html('<p class="text-warning"><i class="fa fa-files-o fa-2x text-warning"></i> <strong>%s</strong></p></div>'.replace('%s', result_error));
-        } else {
-          var result_error = result[1].replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-          $('#mBoxContents').html('<p class="text-danger"><i class="fa fa-thumbs-down fa-2x text-danger"></i> There was a problem connecting to the database server. The following error had occured:</p><p class="text-danger"><strong>%s</strong></p><p class="text-danger">Please verify the connection parameters and try again.</p></div>'.replace('%s', result_error));
-        }
+        $('#mBoxContents').html('<p><img src="images/failed.gif" align="right" hspace="5" vspace="5" />There was a problem connecting to the database server. The following error had occured:</p><p><strong>%s</strong></p><p>Please verify the connection parameters and try again.</p>'.replace('%s', result_error));
 
         formSubmited = false;
       }
@@ -108,101 +91,64 @@
 
 //-->
 </script>
-<div class="row">
-  <div class="col-sm-9">
-    <div class="alert alert-info">
-      <h1>New Installation</h1>
 
-      <p>This web-based installation routine will correctly setup and configure osCommerce Online Merchant to run on this server.</p>
-      <p>Please follow the on-screen instructions that will take you through the database server, web server, and store configuration options. If help is needed at any stage, please consult the documentation or seek help at the community support forums.</p>
-    </div>
+<div class="mainBlock">
+  <div class="stepsBox">
+    <ol>
+      <li style="font-weight: bold;">Database Server</li>
+      <li>Web Server</li>
+      <li>Online Store Settings</li>
+      <li>Finished!</li>
+    </ol>
   </div>
-  <div class="col-sm-3">
-    <div class="panel panel-default">
-      <div class="panel-body">
-        <ol>
-          <li class="text-success"><strong>Database Server</strong></li>
-          <li class="text-muted">Web Server</li>
-          <li class="text-muted">Online Store Settings</li>
-          <li class="text-muted">Finished!</li>
-        </ol>
-      </div>
-    </div>
-    <div class="progress">
-      <div class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="width: 25%">25%</div>
-    </div>
-  </div>
+
+  <h1>New Installation</h1>
+
+  <p>This web-based installation routine will correctly setup and configure osCommerce Online Merchant to run on this server.</p>
+  <p>Please follow the on-screen instructions that will take you through the database server, web server, and store configuration options. If help is needed at any stage, please consult the documentation or seek help at the community support forums.</p>
 </div>
 
-<div class="clearfix"></div>
+<div class="contentBlock">
+  <div class="infoPane">
+    <h3>Step 1: Database Server</h3>
 
-<div class="row">
-  <div class="col-xs-12 col-sm-push-3 col-sm-9">
+    <div class="infoPaneContents">
+      <p>The database server stores the content of the online store such as product information, customer information, and the orders that have been made.</p>
+      <p>Please consult your server administrator if your database server parameters are not yet known.</p>
+    </div>
 
+  </div>
+
+  <div class="contentPane">
     <div id="mBox">
-      <div class="well well-sm">
-        <div id="mBoxContents"></div>
-      </div>
+      <div id="mBoxContents"></div>
     </div>
 
-    <div class="page-header">
-      <p class="inputRequirement pull-right text-right"><span class="glyphicon glyphicon-asterisk inputRequirement"></span> Required information</p>
-      <h2>Database Server</h2>
-    </div>
+    <h2>Database Server</h2>
 
-    <form name="install" id="installForm" action="install.php?step=2" method="post" class="form-horizontal" role="form">
+    <form name="install" id="installForm" action="install.php?step=2" method="post">
 
-      <div class="form-group has-feedback">
-        <label for="dbServer" class="control-label col-xs-3">Database Server</label>
-        <div class="col-xs-9">
-          <?php echo HTML::inputField('DB_SERVER', null, 'required aria-required="true" id="dbServer" placeholder="localhost"'); ?>
-          <span class="glyphicon glyphicon-asterisk form-control-feedback inputRequirement"></span>
-          <span class="help-block">The address of the database server in the form of a hostname or IP address.</span>
-        </div>
-      </div>
+    <table border="0" width="99%" cellspacing="0" cellpadding="5" class="inputForm">
+      <tr>
+        <td class="inputField"><?php echo 'Database Server<br />' . osc_draw_input_field('DB_SERVER', 'localhost', 'class="text"'); ?></td>
+        <td class="inputDescription">The address of the database server in the form of a hostname or IP address.</td>
+      </tr>
+      <tr>
+        <td class="inputField"><?php echo 'Username<br />' . osc_draw_input_field('DB_SERVER_USERNAME', null, 'class="text"'); ?></td>
+        <td class="inputDescription">The username used to connect to the database server.</td>
+      </tr>
+      <tr>
+        <td class="inputField"><?php echo 'Password<br />' . osc_draw_password_field('DB_SERVER_PASSWORD', 'class="text"'); ?></td>
+        <td class="inputDescription">The password that is used together with the username to connect to the database server.</td>
+      </tr>
+      <tr>
+        <td class="inputField"><?php echo 'Database Name<br />' . osc_draw_input_field('DB_DATABASE', null, 'class="text"'); ?></td>
+        <td class="inputDescription">The name of the database to hold the data in.</td>
+      </tr>
+    </table>
 
-      <div class="form-group has-feedback">
-        <label for="userName" class="control-label col-xs-3">Username</label>
-        <div class="col-xs-9">
-          <?php echo HTML::inputField('DB_SERVER_USERNAME', null, 'required aria-required="true" id="userName" placeholder="Username"'); ?>
-          <span class="glyphicon glyphicon-asterisk form-control-feedback inputRequirement"></span>
-          <span class="help-block">The username used to connect to the database server.</span>
-        </div>
-      </div>
-
-      <div class="form-group has-feedback">
-        <label for="passWord" class="control-label col-xs-3">Password</label>
-        <div class="col-xs-9">
-          <?php echo HTML::passwordField('DB_SERVER_PASSWORD', null, 'required aria-required="true" id="passWord"'); ?>
-          <span class="glyphicon glyphicon-asterisk form-control-feedback inputRequirement"></span>
-          <span class="help-block">The password that is used together with the username to connect to the database server.</span>
-        </div>
-      </div>
-
-      <div class="form-group has-feedback">
-        <label for="dbName" class="control-label col-xs-3">Database Name</label>
-        <div class="col-xs-9">
-          <?php echo HTML::inputField('DB_DATABASE', null, 'required aria-required="true" id="dbName" placeholder="Database"'); ?>
-          <span class="glyphicon glyphicon-asterisk form-control-feedback inputRequirement"></span>
-          <span class="help-block">The name of the database to hold the data in.</span>
-        </div>
-      </div>
-
-      <p><?php echo HTML::button('Continue To Step 2', 'triangle-1-e', null, 'primary', null, 'btn-success btn-block'); ?></p>
+    <p><?php echo osc_draw_button('Continue', 'triangle-1-e', null, 'primary'); ?></p>
 
     </form>
-
   </div>
-  <div class="col-xs-12 col-sm-pull-9 col-sm-3">
-    <div class="panel panel-success">
-      <div class="panel-heading">
-        Step 1: Database Server
-      </div>
-      <div class="panel-body">
-        <p>The database server stores the content of the online store such as product information, customer information, and the orders that have been made.</p>
-        <p>Please consult your server administrator if your database server parameters are not yet known.</p>
-      </div>
-    </div>
-  </div>
-
 </div>

@@ -10,6 +10,11 @@
   Released under the GNU General Public License
 */
 
+  if ( (PHP_VERSION >= 4.3) && ((bool)ini_get('register_globals') == false) ) {
+    @ini_set('session.bug_compat_42', 1);
+    @ini_set('session.bug_compat_warn', 0);
+  }
+
   if (STORE_SESSIONS == 'mysql') {
     function _sess_open($save_path, $session_name) {
       return true;
@@ -52,31 +57,32 @@
   }
 
   function tep_session_start() {
+    global $HTTP_GET_VARS, $HTTP_POST_VARS, $HTTP_COOKIE_VARS;
 
     $sane_session_id = true;
 
-    if ( isset($_GET[tep_session_name()]) ) {
-      if ( (SESSION_FORCE_COOKIE_USE == 'True') || (preg_match('/^[a-zA-Z0-9,-]+$/', $_GET[tep_session_name()]) == false) ) {
-        unset($_GET[tep_session_name()]);
+    if ( isset($HTTP_GET_VARS[tep_session_name()]) ) {
+      if ( (SESSION_FORCE_COOKIE_USE == 'True') || (preg_match('/^[a-zA-Z0-9,-]+$/', $HTTP_GET_VARS[tep_session_name()]) == false) ) {
+        unset($HTTP_GET_VARS[tep_session_name()]);
 
         $sane_session_id = false;
       }
     }
 
-    if ( isset($_POST[tep_session_name()]) ) {
-      if ( (SESSION_FORCE_COOKIE_USE == 'True') || (preg_match('/^[a-zA-Z0-9,-]+$/', $_POST[tep_session_name()]) == false) ) {
-        unset($_POST[tep_session_name()]);
+    if ( isset($HTTP_POST_VARS[tep_session_name()]) ) {
+      if ( (SESSION_FORCE_COOKIE_USE == 'True') || (preg_match('/^[a-zA-Z0-9,-]+$/', $HTTP_POST_VARS[tep_session_name()]) == false) ) {
+        unset($HTTP_POST_VARS[tep_session_name()]);
 
         $sane_session_id = false;
       }
     }
 
-    if ( isset($_COOKIE[tep_session_name()]) ) {
-      if ( preg_match('/^[a-zA-Z0-9,-]+$/', $_COOKIE[tep_session_name()]) == false ) {
+    if ( isset($HTTP_COOKIE_VARS[tep_session_name()]) ) {
+      if ( preg_match('/^[a-zA-Z0-9,-]+$/', $HTTP_COOKIE_VARS[tep_session_name()]) == false ) {
         $session_data = session_get_cookie_params();
 
         setcookie(tep_session_name(), '', time()-42000, $session_data['path'], $session_data['domain']);
-        unset($_COOKIE[tep_session_name()]);
+        unset($HTTP_COOKIE_VARS[tep_session_name()]);
 
         $sane_session_id = false;
       }
@@ -92,21 +98,33 @@
   }
 
   function tep_session_register($variable) {
-    if (!isset($GLOBALS[$variable])) {
-      $GLOBALS[$variable] = null;
-    }
+    if (PHP_VERSION < 4.3) {
+      return session_register($variable);
+    } else {
+      if (!isset($GLOBALS[$variable])) {
+        $GLOBALS[$variable] = null;
+      }
 
-    $_SESSION[$variable] =& $GLOBALS[$variable];
+      $_SESSION[$variable] =& $GLOBALS[$variable];
+    }
 
     return false;
   }
 
   function tep_session_is_registered($variable) {
-    return isset($_SESSION) && array_key_exists($variable, $_SESSION);
+    if (PHP_VERSION < 4.3) {
+      return session_is_registered($variable);
+    } else {
+      return isset($_SESSION) && array_key_exists($variable, $_SESSION);
+    }
   }
 
   function tep_session_unregister($variable) {
-    unset($_SESSION[$variable]);
+    if (PHP_VERSION < 4.3) {
+      return session_unregister($variable);
+    } else {
+      unset($_SESSION[$variable]);
+    }
   }
 
   function tep_session_id($sessid = '') {
@@ -125,13 +143,22 @@
     }
   }
 
-  function tep_session_destroy() {
+  function tep_session_close() {
+    if (PHP_VERSION >= '4.0.4') {
+      return session_write_close();
+    } elseif (function_exists('session_close')) {
+      return session_close();
+    }
+  }
 
-    if ( isset($_COOKIE[tep_session_name()]) ) {
+  function tep_session_destroy() {
+    global $HTTP_COOKIE_VARS;
+
+    if ( isset($HTTP_COOKIE_VARS[tep_session_name()]) ) {
       $session_data = session_get_cookie_params();
 
       setcookie(tep_session_name(), '', time()-42000, $session_data['path'], $session_data['domain']);
-      unset($_COOKIE[tep_session_name()]);
+      unset($HTTP_COOKIE_VARS[tep_session_name()]);
     }
 
     return session_destroy();

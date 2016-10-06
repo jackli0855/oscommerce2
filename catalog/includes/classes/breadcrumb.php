@@ -5,7 +5,7 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2003 osCommerce
 
   Released under the GNU General Public License
 */
@@ -25,21 +25,18 @@
       $this->_trail[] = array('title' => $title, 'link' => $link);
     }
 
-    function trail($separator = NULL) {
-      $breadcrumb_count = 1;
-
-      $trail_string = '<ol class="breadcrumb" itemscope itemtype="http://schema.org/BreadcrumbList">';
+    function trail($separator = ' - ') {
+      $trail_string = '';
 
       for ($i=0, $n=sizeof($this->_trail); $i<$n; $i++) {
         if (isset($this->_trail[$i]['link']) && tep_not_null($this->_trail[$i]['link'])) {
-          $trail_string .= '<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem"><a href="' . $this->_trail[$i]['link'] . '" itemprop="item"><span itemprop="name">' . $this->_trail[$i]['title'] . '</span></a><meta itemprop="position" content="' . $breadcrumb_count . '" /></li>' . "\n";
+          $trail_string .= '<a href="' . $this->_trail[$i]['link'] . '" class="headerNavigation">' . $this->_trail[$i]['title'] . '</a>';
         } else {
-          $trail_string .= '<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem"><span itemprop="name">' . $this->_trail[$i]['title'] . '</span><meta itemprop="position" content="' . $breadcrumb_count . '" /></li>';
+          $trail_string .= $this->_trail[$i]['title'];
         }
-        $breadcrumb_count++;
-      }
 
-      $trail_string .= '</ol>';
+        if (($i+1) < $n) $trail_string .= $separator;
+      }
 
       return $trail_string;
     }

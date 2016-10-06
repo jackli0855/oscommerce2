@@ -5,12 +5,10 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2013 osCommerce
 
   Released under the GNU General Public License
 */
-
-  use OSC\OM\Registry;
 
 ////
 // Class to handle currencies
@@ -20,26 +18,24 @@
 
 // class constructor
     function currencies() {
-      $OSCOM_Db = Registry::get('Db');
-
       $this->currencies = array();
-
-      $Qcurrencies = $OSCOM_Db->query('select code, title, symbol_left, symbol_right, decimal_point, thousands_point, decimal_places, value from :table_currencies');
-
-      while ($Qcurrencies->fetch()) {
-        $this->currencies[$Qcurrencies->value('code')] = array('title' => $Qcurrencies->value('title'),
-                                                               'symbol_left' => $Qcurrencies->value('symbol_left'),
-                                                               'symbol_right' => $Qcurrencies->value('symbol_right'),
-                                                               'decimal_point' => $Qcurrencies->value('decimal_point'),
-                                                               'thousands_point' => $Qcurrencies->value('thousands_point'),
-                                                               'decimal_places' => $Qcurrencies->valueInt('decimal_places'),
-                                                               'value' => $Qcurrencies->valueDecimal('value'));
+      $currencies_query = tep_db_query("select code, title, symbol_left, symbol_right, decimal_point, thousands_point, decimal_places, value from " . TABLE_CURRENCIES);
+      while ($currencies = tep_db_fetch_array($currencies_query)) {
+        $this->currencies[$currencies['code']] = array('title' => $currencies['title'],
+                                                       'symbol_left' => $currencies['symbol_left'],
+                                                       'symbol_right' => $currencies['symbol_right'],
+                                                       'decimal_point' => $currencies['decimal_point'],
+                                                       'thousands_point' => $currencies['thousands_point'],
+                                                       'decimal_places' => (int)$currencies['decimal_places'],
+                                                       'value' => $currencies['value']);
       }
     }
 
 // class methods
     function format($number, $calculate_currency_value = true, $currency_type = '', $currency_value = '') {
-      if (empty($currency_type)) $currency_type = $_SESSION['currency'];
+      global $currency;
+
+      if (empty($currency_type)) $currency_type = $currency;
 
       if ($calculate_currency_value == true) {
         $rate = (tep_not_null($currency_value)) ? $currency_value : $this->currencies[$currency_type]['value'];
@@ -52,7 +48,9 @@
     }
 
     function calculate_price($products_price, $products_tax, $quantity = 1) {
-      return tep_round(tep_add_tax($products_price, $products_tax), $this->currencies[$_SESSION['currency']]['decimal_places']) * $quantity;
+      global $currency;
+
+      return tep_round(tep_add_tax($products_price, $products_tax), $this->currencies[$currency]['decimal_places']) * $quantity;
     }
 
     function is_set($code) {

@@ -5,30 +5,26 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2010 osCommerce
 
   Released under the GNU General Public License
 */
 
-  use OSC\OM\OSCOM;
-
   require('includes/application_top.php');
 
-  if (!isset($_SESSION['customer_id'])) {
-    $_SESSION['navigation']->set_snapshot();
-    OSCOM::redirect('index.php', 'Account&LogIn', 'SSL');
+  if (!tep_session_is_registered('customer_id')) {
+    $navigation->set_snapshot();
+    tep_redirect(tep_href_link(FILENAME_LOGIN, '', 'SSL'));
   }
 
-  require(DIR_WS_LANGUAGES . $_SESSION['language'] . '/account.php');
+  require(DIR_WS_LANGUAGES . $language . '/' . FILENAME_ACCOUNT);
 
-  $breadcrumb->add(NAVBAR_TITLE, OSCOM::link('account.php', '', 'SSL'));
+  $breadcrumb->add(NAVBAR_TITLE, tep_href_link(FILENAME_ACCOUNT, '', 'SSL'));
 
-  require('includes/template_top.php');
+  require(DIR_WS_INCLUDES . 'template_top.php');
 ?>
 
-<div class="page-header">
-  <h1><?php echo HEADING_TITLE; ?></h1>
-</div>
+<h1><?php echo HEADING_TITLE; ?></h1>
 
 <?php
   if ($messageStack->size('account') > 0) {
@@ -45,6 +41,6 @@
 </div>
 
 <?php
-  require('includes/template_bottom.php');
-  require('includes/application_bottom.php');
+  require(DIR_WS_INCLUDES . 'template_bottom.php');
+  require(DIR_WS_INCLUDES . 'application_bottom.php');
 ?>

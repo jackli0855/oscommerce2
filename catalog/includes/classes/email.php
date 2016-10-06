@@ -5,7 +5,7 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2003 osCommerce
 
   Released under the GNU General Public License
 
@@ -68,7 +68,8 @@
 
       $this->headers[] = 'MIME-Version: 1.0';
 
-      foreach($headers as $value) {
+      reset($headers);
+      while (list(,$value) = each($headers)) {
         if (tep_not_null($value)) {
           $this->headers[] = $value;
         }
@@ -112,8 +113,9 @@
 
     function find_html_images($images_dir) {
 // Build the list of image extensions
-      
-      $extensions[] = array_keys( $this->image_types);
+      while (list($key, ) = each($this->image_types)) {
+        $extensions[] = $key;
+      }
 
       preg_match_all('/"([^"]+\.(' . implode('|', $extensions).'))"/Ui', $this->html, $images);
 
@@ -187,6 +189,8 @@
  * Adds a text subpart to a mime_part object
  */
 
+/* HPDL PHP3 */
+//    function &add_text_part(&$obj, $text) {
     function add_text_part(&$obj, $text) {
       $params['content_type'] = 'text/plain';
       $params['encoding'] = $this->build_params['text_encoding'];
@@ -203,6 +207,8 @@
  * Adds a html subpart to a mime_part object
  */
 
+/* HPDL PHP3 */
+//    function &add_html_part(&$obj) {
     function add_html_part(&$obj) {
       $params['content_type'] = 'text/html';
       $params['encoding'] = $this->build_params['html_encoding'];
@@ -219,6 +225,8 @@
  * Starts a message with a mixed part
  */
 
+/* HPDL PHP3 */
+//    function &add_mixed_part() {
     function add_mixed_part() {
       $params['content_type'] = 'multipart/mixed';
 
@@ -229,6 +237,8 @@
  * Adds an alternative part to a mime_part object
  */
 
+/* HPDL PHP3 */
+//    function &add_alternative_part(&$obj) {
     function add_alternative_part(&$obj) {
       $params['content_type'] = 'multipart/alternative';
 
@@ -243,6 +253,8 @@
  * Adds a html subpart to a mime_part object
  */
 
+/* HPDL PHP3 */
+//    function &add_related_part(&$obj) {
     function add_related_part(&$obj) {
       $params['content_type'] = 'multipart/related';
 
@@ -257,6 +269,8 @@
  * Adds an html image subpart to a mime_part object
  */
 
+/* HPDL PHP3 */
+//    function &add_html_image_part(&$obj, $value) {
     function add_html_image_part(&$obj, $value) {
       $params['content_type'] = $value['c_type'];
       $params['encoding'] = 'base64';
@@ -271,6 +285,8 @@
  * Adds an attachment subpart to a mime_part object
  */
 
+/* HPDL PHP3 */
+//    function &add_attachment_part(&$obj, $value) {
     function add_attachment_part(&$obj, $value) {
       $params['content_type'] = $value['c_type'];
       $params['encoding'] = $value['encoding'];
@@ -300,17 +316,21 @@
  *                          - Default is iso-8859-1
  */
 
+/* HPDL PHP3 */
+//    function build_message($params = array()) {
     function build_message($params = '') {
       if ($params == '') $params = array();
 
-      if (!empty($params)) {
-        foreach($params as $key => $value) {
+      if (count($params) > 0) {
+        reset($params);
+        while(list($key, $value) = each($params)) {
           $this->build_params[$key] = $value;
         }
       }
 
       if (tep_not_null($this->html_images)) {
-        foreach($this->html_images as $value) {
+        reset($this->html_images);
+        while (list(,$value) = each($this->html_images)) {
           $this->html = str_replace($value['name'], 'cid:' . $value['cid'], $this->html);
         }
       }
@@ -323,9 +343,13 @@
 
       switch (true) {
         case (($text == true) && ($attachments == false)):
+/* HPDL PHP3 */
+//          $message =& $this->add_text_part($null, $this->text);
           $message = $this->add_text_part($null, $this->text);
           break;
         case (($text == false) && ($attachments == true) && ($html == false)):
+/* HPDL PHP3 */
+//          $message =& $this->add_mixed_part();
           $message = $this->add_mixed_part();
 
           for ($i=0; $i<count($this->attachments); $i++) {
@@ -333,6 +357,8 @@
           }
           break;
         case (($text == true) && ($attachments == true)):
+/* HPDL PHP3 */
+//          $message =& $this->add_mixed_part();
           $message = $this->add_mixed_part();
           $this->add_text_part($message, $this->text);
 
@@ -342,19 +368,30 @@
           break;
         case (($html == true) && ($attachments == false) && ($html_images == false)):
           if (tep_not_null($this->html_text)) {
+/* HPDL PHP3 */
+//            $message =& $this->add_alternative_part($null);
             $message = $this->add_alternative_part($null);
             $this->add_text_part($message, $this->html_text);
             $this->add_html_part($message);
           } else {
+/* HPDL PHP3 */
+//            $message =& $this->add_html_part($null);
             $message = $this->add_html_part($null);
           }
           break;
         case (($html == true) && ($attachments == false) && ($html_images == true)):
           if (tep_not_null($this->html_text)) {
+/* HPDL PHP3 */
+//            $message =& $this->add_alternative_part($null);
             $message = $this->add_alternative_part($null);
             $this->add_text_part($message, $this->html_text);
+/* HPDL PHP3 */
+//            $related =& $this->add_related_part($message);
             $related = $this->add_related_part($message);
           } else {
+/* HPDL PHP3 */
+//            $message =& $this->add_related_part($null);
+//            $related =& $message;
             $message = $this->add_related_part($null);
             $related = $message;
           }
@@ -365,8 +402,12 @@
           }
           break;
         case (($html == true) && ($attachments == true) && ($html_images == false)):
+/* HPDL PHP3 */
+//          $message =& $this->add_mixed_part();
           $message = $this->add_mixed_part();
           if (tep_not_null($this->html_text)) {
+/* HPDL PHP3 */
+//            $alt =& $this->add_alternative_part($message);
             $alt = $this->add_alternative_part($message);
             $this->add_text_part($alt, $this->html_text);
             $this->add_html_part($alt);
@@ -379,13 +420,21 @@
           }
           break;
         case (($html == true) && ($attachments == true) && ($html_images == true)):
+/* HPDL PHP3 */
+//          $message =& $this->add_mixed_part();
           $message = $this->add_mixed_part();
 
           if (tep_not_null($this->html_text)) {
+/* HPDL PHP3 */
+//            $alt =& $this->add_alternative_part($message);
             $alt = $this->add_alternative_part($message);
             $this->add_text_part($alt, $this->html_text);
+/* HPDL PHP3 */
+//            $rel =& $this->add_related_part($alt);
             $rel = $this->add_related_part($alt);
           } else {
+/* HPDL PHP3 */
+//            $rel =& $this->add_related_part($message);
             $rel = $this->add_related_part($message);
           }
           $this->add_html_part($rel);
@@ -404,7 +453,8 @@
         $output = $message->encode();
         $this->output = $output['body'];
 
-        foreach($output['headers'] as $key => $value) {
+        reset($output['headers']);
+        while (list($key, $value) = each($output['headers'])) {
           $headers[] = $key . ': ' . $value;
         }
 

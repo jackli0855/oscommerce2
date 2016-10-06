@@ -5,13 +5,10 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2010 osCommerce
 
   Released under the GNU General Public License
 */
-
-  use OSC\OM\OSCOM;
-  use OSC\OM\Registry;
 
   class bm_shopping_cart {
     var $code = 'bm_shopping_cart';
@@ -34,44 +31,56 @@
     }
 
     function execute() {
-      global $new_products_id_in_cart, $currencies, $oscTemplate;
+      global $cart, $new_products_id_in_cart, $currencies, $oscTemplate;
 
       $cart_contents_string = '';
 
-      if ($_SESSION['cart']->count_contents() > 0) {
-        $cart_contents_string = '<ul class="list-unstyled">';
-        $products = $_SESSION['cart']->get_products();
+      if ($cart->count_contents() > 0) {
+        $cart_contents_string = '<table border="0" width="100%" cellspacing="0" cellpadding="0" class="ui-widget-content infoBoxContents">';
+        $products = $cart->get_products();
         for ($i=0, $n=sizeof($products); $i<$n; $i++) {
+          $cart_contents_string .= '<tr><td align="right" valign="top">';
 
-          $cart_contents_string .= '<li';
-          if ((isset($_SESSION['new_products_id_in_cart'])) && ($new_products_id_in_cart == $products[$i]['id'])) {
-            $cart_contents_string .= ' class="newItemInCart"';
+          if ((tep_session_is_registered('new_products_id_in_cart')) && ($new_products_id_in_cart == $products[$i]['id'])) {
+            $cart_contents_string .= '<span class="newItemInCart">';
           }
-          $cart_contents_string .= '>';
 
           $cart_contents_string .= $products[$i]['quantity'] . '&nbsp;x&nbsp;';
 
-          $cart_contents_string .= '<a href="' . OSCOM::link('product_info.php', 'products_id=' . $products[$i]['id']) . '">';
+          if ((tep_session_is_registered('new_products_id_in_cart')) && ($new_products_id_in_cart == $products[$i]['id'])) {
+            $cart_contents_string .= '</span>';
+          }
+
+          $cart_contents_string .= '</td><td valign="top"><a href="' . tep_href_link(FILENAME_PRODUCT_INFO, 'products_id=' . $products[$i]['id']) . '">';
+
+          if ((tep_session_is_registered('new_products_id_in_cart')) && ($new_products_id_in_cart == $products[$i]['id'])) {
+            $cart_contents_string .= '<span class="newItemInCart">';
+          }
 
           $cart_contents_string .= $products[$i]['name'];
 
-          $cart_contents_string .= '</a></li>';
+          if ((tep_session_is_registered('new_products_id_in_cart')) && ($new_products_id_in_cart == $products[$i]['id'])) {
+            $cart_contents_string .= '</span>';
+          }
 
-          if ((isset($_SESSION['new_products_id_in_cart'])) && ($new_products_id_in_cart == $products[$i]['id'])) {
-            unset($_SESSION['new_products_id_in_cart']);
+          $cart_contents_string .= '</a></td></tr>';
+
+          if ((tep_session_is_registered('new_products_id_in_cart')) && ($new_products_id_in_cart == $products[$i]['id'])) {
+            tep_session_unregister('new_products_id_in_cart');
           }
         }
 
-        $cart_contents_string .= '</ul>';
-        $cart_footer_string = '<div class="panel-footer text-right">' . $currencies->format($_SESSION['cart']->show_total()) . '</div>';
+        $cart_contents_string .= '<tr><td colspan="2" style="padding-top: 5px; padding-bottom: 2px;">' . tep_draw_separator() . '</td></tr>' .
+                                 '<tr><td colspan="2" align="right">' . $currencies->format($cart->show_total()) . '</td></tr>' .
+                                 '</table>';
       } else {
-        $cart_contents_string .= '<p>' . MODULE_BOXES_SHOPPING_CART_BOX_CART_EMPTY . '</p>';
-        $cart_footer_string = NULL;
+        $cart_contents_string .= '<div class="ui-widget-content infoBoxContents">' . MODULE_BOXES_SHOPPING_CART_BOX_CART_EMPTY . '</div>';
       }
 
-      ob_start();
-      include('includes/modules/boxes/templates/shopping_cart.php');
-      $data = ob_get_clean();
+      $data = '<div class="ui-widget infoBoxContainer">' .
+              '  <div class="ui-widget-header infoBoxHeading"><a href="' . tep_href_link(FILENAME_SHOPPING_CART) . '">' . MODULE_BOXES_SHOPPING_CART_BOX_TITLE . '</a></div>' .
+              '  ' . $cart_contents_string .
+              '</div>';
 
       $oscTemplate->addBlock($data, $this->group);
     }
@@ -85,47 +94,17 @@
     }
 
     function install() {
-      $OSCOM_Db = Registry::get('Db');
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Enable Shopping Cart Module',
-        'configuration_key' => 'MODULE_BOXES_SHOPPING_CART_STATUS',
-        'configuration_value' => 'True',
-        'configuration_description' => 'Do you want to add the module to your shop?',
-        'configuration_group_id' => '6',
-        'sort_order' => '1',
-        'set_function' => 'tep_cfg_select_option(array(\'True\', \'False\'), ',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Content Placement',
-        'configuration_key' => 'MODULE_BOXES_SHOPPING_CART_CONTENT_PLACEMENT',
-        'configuration_value' => 'Right Column',
-        'configuration_description' => 'Should the module be loaded in the left or right column?',
-        'configuration_group_id' => '6',
-        'sort_order' => '1', 
-        'set_function' => 'tep_cfg_select_option(array(\'Left Column\', \'Right Column\'), ',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Sort Order',
-        'configuration_key' => 'MODULE_BOXES_SHOPPING_CART_SORT_ORDER',
-        'configuration_value' => '0',
-        'configuration_description' => 'Sort order of display. Lowest is displayed first.',
-        'configuration_group_id' => '6',
-        'sort_order' => '0',
-        'date_added' => 'now()'
-      ]);
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable Shopping Cart Module', 'MODULE_BOXES_SHOPPING_CART_STATUS', 'True', 'Do you want to add the module to your shop?', '6', '1', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Content Placement', 'MODULE_BOXES_SHOPPING_CART_CONTENT_PLACEMENT', 'Right Column', 'Should the module be loaded in the left or right column?', '6', '1', 'tep_cfg_select_option(array(\'Left Column\', \'Right Column\'), ', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Sort Order', 'MODULE_BOXES_SHOPPING_CART_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', '6', '0', now())");
     }
 
     function remove() {
-      return Registry::get('Db')->exec('delete from :table_configuration where configuration_key in ("' . implode('", "', $this->keys()) . '")');
+      tep_db_query("delete from " . TABLE_CONFIGURATION . " where configuration_key in ('" . implode("', '", $this->keys()) . "')");
     }
 
     function keys() {
       return array('MODULE_BOXES_SHOPPING_CART_STATUS', 'MODULE_BOXES_SHOPPING_CART_CONTENT_PLACEMENT', 'MODULE_BOXES_SHOPPING_CART_SORT_ORDER');
     }
   }
-
+?>

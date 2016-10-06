@@ -5,63 +5,62 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2014 osCommerce
 
   Released under the GNU General Public License
 */
 
-  use OSC\OM\HTML;
-  use OSC\OM\OSCOM;
-
   chdir('../../../../../');
   require('includes/application_top.php');
 
-  if (!isset($_SESSION['customer_id'])) {
-    $_SESSION['navigation']->set_snapshot();
-    OSCOM::redirect('index.php', 'Account&LogIn', 'SSL');
+  if (!tep_session_is_registered('customer_id')) {
+    $navigation->set_snapshot();
+    tep_redirect(tep_href_link(FILENAME_LOGIN, '', 'SSL'));
   }
 
   if ( defined('MODULE_PAYMENT_INSTALLED') && tep_not_null(MODULE_PAYMENT_INSTALLED) && in_array('braintree_cc.php', explode(';', MODULE_PAYMENT_INSTALLED)) ) {
     if ( !class_exists('braintree_cc') ) {
-      include(DIR_WS_LANGUAGES . $_SESSION['language'] . '/modules/payment/braintree_cc.php');
+      include(DIR_WS_LANGUAGES . $language . '/modules/payment/braintree_cc.php');
       include(DIR_WS_MODULES . 'payment/braintree_cc.php');
     }
 
     $braintree_cc = new braintree_cc();
 
     if ( !$braintree_cc->enabled ) {
-      OSCOM::redirect('account.php', '', 'SSL');
+      tep_redirect(tep_href_link(FILENAME_ACCOUNT, '', 'SSL'));
     }
   } else {
-    OSCOM::redirect('account.php', '', 'SSL');
+    tep_redirect(tep_href_link(FILENAME_ACCOUNT, '', 'SSL'));
   }
 
-  require(DIR_WS_LANGUAGES . $_SESSION['language'] . '/modules/content/account/cm_account_braintree_cards.php');
+  require(DIR_WS_LANGUAGES . $language . '/modules/content/account/cm_account_braintree_cards.php');
   require('includes/modules/content/account/cm_account_braintree_cards.php');
   $braintree_cards = new cm_account_braintree_cards();
 
   if ( !$braintree_cards->isEnabled() ) {
-    OSCOM::redirect('account.php', '', 'SSL');
+    tep_redirect(tep_href_link(FILENAME_ACCOUNT, '', 'SSL'));
   }
 
-  if ( isset($_GET['action']) ) {
-    if ( ($_GET['action'] == 'delete') && isset($_GET['id']) && is_numeric($_GET['id']) && isset($_GET['formid']) && ($_GET['formid'] == md5($_SESSION['sessiontoken']))) {
-      $Qtoken = $OSCOM_Db->get('customers_braintree_tokens', ['id', 'braintree_token'], ['id' => $_GET['id'], 'customers_id' => $_SESSION['customer_id']]);
+  if ( isset($HTTP_GET_VARS['action']) ) {
+    if ( ($HTTP_GET_VARS['action'] == 'delete') && isset($HTTP_GET_VARS['id']) && is_numeric($HTTP_GET_VARS['id']) && isset($HTTP_GET_VARS['formid']) && ($HTTP_GET_VARS['formid'] == md5($sessiontoken))) {
+      $token_query = tep_db_query("select id, braintree_token from customers_braintree_tokens where id = '" . (int)$HTTP_GET_VARS['id'] . "' and customers_id = '" . (int)$customer_id . "'");
 
-      if ($Qtoken->fetch() !== false) {
-        $braintree_cc->deleteCard($Qtoken->value('braintree_token'), $Qtoken->valueInt('id'));
+      if ( tep_db_num_rows($token_query) ) {
+        $token = tep_db_fetch_array($token_query);
+
+        $braintree_cc->deleteCard($token['braintree_token'], $token['id']);
 
         $messageStack->add_session('cards', MODULE_CONTENT_ACCOUNT_BRAINTREE_CARDS_SUCCESS_DELETED, 'success');
       }
     }
 
-    OSCOM::redirect('ext/modules/content/account/braintree/cards.php', '', 'SSL');
+    tep_redirect(tep_href_link('ext/modules/content/account/braintree/cards.php', '', 'SSL'));
   }
 
-  $breadcrumb->add(MODULE_CONTENT_ACCOUNT_BRAINTREE_CARDS_NAVBAR_TITLE_1, OSCOM::link('account.php', '', 'SSL'));
-  $breadcrumb->add(MODULE_CONTENT_ACCOUNT_BRAINTREE_CARDS_NAVBAR_TITLE_2, OSCOM::link('ext/modules/content/account/braintree/cards.php', '', 'SSL'));
+  $breadcrumb->add(MODULE_CONTENT_ACCOUNT_BRAINTREE_CARDS_NAVBAR_TITLE_1, tep_href_link(FILENAME_ACCOUNT, '', 'SSL'));
+  $breadcrumb->add(MODULE_CONTENT_ACCOUNT_BRAINTREE_CARDS_NAVBAR_TITLE_2, tep_href_link('ext/modules/content/account/braintree/cards.php', '', 'SSL'));
 
-  require('includes/template_top.php');
+  require(DIR_WS_INCLUDES . 'template_top.php');
 ?>
 
 <h1><?php echo MODULE_CONTENT_ACCOUNT_BRAINTREE_CARDS_HEADING_TITLE; ?></h1>
@@ -80,19 +79,19 @@
   <div class="contentText">
 
 <?php
-  $Qtokens = $OSCOM_Db->get('customers_braintree_tokens', ['id', 'card_type', 'number_filtered', 'expiry_date'], ['customers_id' => $_SESSION['customer_id']], 'date_added');
+  $tokens_query = tep_db_query("select id, card_type, number_filtered, expiry_date from customers_braintree_tokens where customers_id = '" . (int)$customer_id . "' order by date_added");
 
-  if ($Qtokens->fetch() !== false) {
-    do {
+  if ( tep_db_num_rows($tokens_query) > 0 ) {
+    while ( $tokens = tep_db_fetch_array($tokens_query) ) {
 ?>
 
     <div>
-      <span style="float: right;"><?php echo HTML::button(SMALL_IMAGE_BUTTON_DELETE, 'glyphicon glyphicon-trash', OSCOM::link('ext/modules/content/account/braintree/cards.php', 'action=delete&id=' . $Qtokens->valueInt('id') . '&formid=' . md5($_SESSION['sessiontoken']), 'SSL')); ?></span>
-      <p><strong><?php echo $Qtokens->valueProtected('card_type'); ?></strong>&nbsp;&nbsp;****<?php echo $Qtokens->valueProtected('number_filtered') . '&nbsp;&nbsp;' . tep_output_string_protected(substr($Qtokens->value('expiry_date'), 0, 2) . '/' . substr($Qtokens->value('expiry_date'), 2)); ?></p>
+      <span style="float: right;"><?php echo tep_draw_button(SMALL_IMAGE_BUTTON_DELETE, 'trash', tep_href_link('ext/modules/content/account/braintree/cards.php', 'action=delete&id=' . (int)$tokens['id'] . '&formid=' . md5($sessiontoken), 'SSL')); ?></span>
+      <p><strong><?php echo tep_output_string_protected($tokens['card_type']); ?></strong>&nbsp;&nbsp;****<?php echo tep_output_string_protected($tokens['number_filtered']) . '&nbsp;&nbsp;' . tep_output_string_protected(substr($tokens['expiry_date'], 0, 2) . '/' . substr($tokens['expiry_date'], 2)); ?></p>
     </div>
 
 <?php
-    } while ($Qtokens->fetch());
+    }
   } else {
 ?>
 
@@ -107,11 +106,11 @@
   </div>
 
   <div class="buttonSet">
-    <?php echo HTML::button(IMAGE_BUTTON_BACK, 'glyphicon glyphicon-chevron-left', OSCOM::link('account.php', '', 'SSL')); ?>
+    <?php echo tep_draw_button(IMAGE_BUTTON_BACK, 'triangle-1-w', tep_href_link(FILENAME_ACCOUNT, '', 'SSL')); ?>
   </div>
 </div>
 
 <?php
-  require('includes/template_bottom.php');
-  require('includes/application_bottom.php');
+  require(DIR_WS_INCLUDES . 'template_bottom.php');
+  require(DIR_WS_INCLUDES . 'application_bottom.php');
 ?>

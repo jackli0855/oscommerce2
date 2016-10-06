@@ -5,14 +5,10 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2014 osCommerce
 
   Released under the GNU General Public License
 */
-
-  use OSC\OM\HTML;
-  use OSC\OM\OSCOM;
-  use OSC\OM\Registry;
 
   class bm_currencies {
     var $code = 'bm_currencies';
@@ -35,29 +31,31 @@
     }
 
     function execute() {
-      global $PHP_SELF, $currencies, $request_type, $oscTemplate;
+      global $PHP_SELF, $currencies, $HTTP_GET_VARS, $request_type, $currency, $oscTemplate;
 
       if (substr(basename($PHP_SELF), 0, 8) != 'checkout') {
         if (isset($currencies) && is_object($currencies) && (count($currencies->currencies) > 1)) {
           reset($currencies->currencies);
           $currencies_array = array();
-          foreach($currencies->currencies as $key => $value) {
+          while (list($key, $value) = each($currencies->currencies)) {
             $currencies_array[] = array('id' => $key, 'text' => $value['title']);
           }
 
           $hidden_get_variables = '';
-          foreach ( $_GET as $key => $value ) {
-            if ( is_string($value) && ($key != 'currency') && ($key != session_name()) && ($key != 'x') && ($key != 'y') ) {
-              $hidden_get_variables .= HTML::hiddenField($key, $value);
+          reset($HTTP_GET_VARS);
+          while (list($key, $value) = each($HTTP_GET_VARS)) {
+            if ( is_string($value) && ($key != 'currency') && ($key != tep_session_name()) && ($key != 'x') && ($key != 'y') ) {
+              $hidden_get_variables .= tep_draw_hidden_field($key, $value);
             }
           }
 
-          $form_output = HTML::form('currencies', OSCOM::link($PHP_SELF, '', $request_type, false), 'get', null, ['session_id' => true]) . HTML::selectField('currency', $currencies_array, $_SESSION['currency'], 'onchange="this.form.submit();"') . $hidden_get_variables . '</form>';
-
-          ob_start();
-          include('includes/modules/boxes/templates/currencies.php');
-          $data = ob_get_clean();
-
+          $data = '<div class="ui-widget infoBoxContainer">' .
+                  '  <div class="ui-widget-header infoBoxHeading">' . MODULE_BOXES_CURRENCIES_BOX_TITLE . '</div>' .
+                  '  <div class="ui-widget-content infoBoxContents">' . 
+                  '    ' . tep_draw_form('currencies', tep_href_link($PHP_SELF, '', $request_type, false), 'get') .
+                  '    ' . tep_draw_pull_down_menu('currency', $currencies_array, $currency, 'onchange="this.form.submit();" style="width: 100%"') . $hidden_get_variables . tep_hide_session_id() . '</form>' .
+                  '  </div>' .
+                  '</div>';
 
           $oscTemplate->addBlock($data, $this->group);
         }
@@ -73,47 +71,17 @@
     }
 
     function install() {
-      $OSCOM_Db = Registry::get('Db');
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Enable Currencies Module',
-        'configuration_key' => 'MODULE_BOXES_CURRENCIES_STATUS',
-        'configuration_value' => 'True',
-        'configuration_description' => 'Do you want to add the module to your shop?',
-        'configuration_group_id' => '6',
-        'sort_order' => '1',
-        'set_function' => 'tep_cfg_select_option(array(\'True\', \'False\'), ',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Content Placement',
-        'configuration_key' => 'MODULE_BOXES_CURRENCIES_CONTENT_PLACEMENT',
-        'configuration_value' => 'Right Column',
-        'configuration_description' => 'Should the module be loaded in the left or right column?',
-        'configuration_group_id' => '6',
-        'sort_order' => '1',
-        'set_function' => 'tep_cfg_select_option(array(\'Left Column\', \'Right Column\'), ',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Sort Order',
-        'configuration_key' => 'MODULE_BOXES_CURRENCIES_SORT_ORDER',
-        'configuration_value' => '0',
-        'configuration_description' => 'Sort order of display. Lowest is displayed first.',
-        'configuration_group_id' => '6',
-        'sort_order' => '0',
-        'date_added' => 'now()'
-      ]);
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable Currencies Module', 'MODULE_BOXES_CURRENCIES_STATUS', 'True', 'Do you want to add the module to your shop?', '6', '1', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Content Placement', 'MODULE_BOXES_CURRENCIES_CONTENT_PLACEMENT', 'Right Column', 'Should the module be loaded in the left or right column?', '6', '1', 'tep_cfg_select_option(array(\'Left Column\', \'Right Column\'), ', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Sort Order', 'MODULE_BOXES_CURRENCIES_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', '6', '0', now())");
     }
 
     function remove() {
-      return Registry::get('Db')->exec('delete from :table_configuration where configuration_key in ("' . implode('", "', $this->keys()) . '")');
+      tep_db_query("delete from " . TABLE_CONFIGURATION . " where configuration_key in ('" . implode("', '", $this->keys()) . "')");
     }
 
     function keys() {
       return array('MODULE_BOXES_CURRENCIES_STATUS', 'MODULE_BOXES_CURRENCIES_CONTENT_PLACEMENT', 'MODULE_BOXES_CURRENCIES_SORT_ORDER');
     }
   }
-
+?>

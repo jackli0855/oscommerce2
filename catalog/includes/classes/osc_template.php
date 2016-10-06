@@ -5,20 +5,18 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2014 osCommerce
 
   Released under the GNU General Public License
 */
-
-  use OSC\OM\Apps;
 
   class oscTemplate {
     var $_title;
     var $_blocks = array();
     var $_content = array();
-    var $_grid_container_width = 12;
-    var $_grid_content_width = BOOTSTRAP_CONTENT;
-    var $_grid_column_width = 0; // deprecated
+    var $_grid_container_width = 24;
+    var $_grid_content_width = 16;
+    var $_grid_column_width = 4;
     var $_data = array();
 
     function oscTemplate() {
@@ -46,7 +44,7 @@
     }
 
     function getGridColumnWidth() {
-      return (12 - BOOTSTRAP_CONTENT) / 2;
+      return $this->_grid_column_width;
     }
 
     function setTitle($title) {
@@ -72,6 +70,8 @@
     }
 
     function buildBlocks() {
+      global $language;
+
       if ( defined('TEMPLATE_BLOCK_GROUPS') && tep_not_null(TEMPLATE_BLOCK_GROUPS) ) {
         $tbgroups_array = explode(';', TEMPLATE_BLOCK_GROUPS);
 
@@ -82,11 +82,11 @@
             $modules_array = explode(';', constant($module_key));
 
             foreach ( $modules_array as $module ) {
-              $class = basename($module, '.php');
+              $class = substr($module, 0, strrpos($module, '.'));
 
               if ( !class_exists($class) ) {
-                if ( file_exists(DIR_WS_LANGUAGES . $_SESSION['language'] . '/modules/' . $group . '/' . $module) ) {
-                  include(DIR_WS_LANGUAGES . $_SESSION['language'] . '/modules/' . $group . '/' . $module);
+                if ( file_exists(DIR_WS_LANGUAGES . $language . '/modules/' . $group . '/' . $module) ) {
+                  include(DIR_WS_LANGUAGES . $language . '/modules/' . $group . '/' . $module);
                 }
 
                 if ( file_exists(DIR_WS_MODULES . $group . '/' . $class . '.php') ) {
@@ -116,6 +116,8 @@
     }
 
     function getContent($group) {
+      global $language;
+
       if ( !class_exists('tp_' . $group) && file_exists(DIR_WS_MODULES . 'pages/tp_' . $group . '.php') ) {
         include(DIR_WS_MODULES . 'pages/tp_' . $group . '.php');
       }
@@ -127,31 +129,21 @@
       }
 
       foreach ( $this->getContentModules($group) as $module ) {
-        if (strpos($module, '\\') !== false) {
-          $class = Apps::getModuleClass($group . '/' . $module, 'Content');
+        if ( !class_exists($module) ) {
+          if ( file_exists(DIR_WS_MODULES . 'content/' . $group . '/' . $module . '.php') ) {
+            if ( file_exists(DIR_WS_LANGUAGES . $language . '/modules/content/' . $group . '/' . $module . '.php') ) {
+              include(DIR_WS_LANGUAGES . $language . '/modules/content/' . $group . '/' . $module . '.php');
+            }
 
-          $mb = new $class();
+            include(DIR_WS_MODULES . 'content/' . $group . '/' . $module . '.php');
+          }
+        }
+
+        if ( class_exists($module) ) {
+          $mb = new $module();
 
           if ( $mb->isEnabled() ) {
             $mb->execute();
-          }
-        } else {
-          if ( !class_exists($module) ) {
-            if ( file_exists(DIR_WS_MODULES . 'content/' . $group . '/' . $module . '.php') ) {
-              if ( file_exists(DIR_WS_LANGUAGES . $_SESSION['language'] . '/modules/content/' . $group . '/' . $module . '.php') ) {
-                include(DIR_WS_LANGUAGES . $_SESSION['language'] . '/modules/content/' . $group . '/' . $module . '.php');
-              }
-
-              include(DIR_WS_MODULES . 'content/' . $group . '/' . $module . '.php');
-            }
-          }
-
-          if ( class_exists($module) ) {
-            $mb = new $module();
-
-            if ( $mb->isEnabled() ) {
-              $mb->execute();
-            }
           }
         }
       }

@@ -5,14 +5,10 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2014 osCommerce
 
   Released under the GNU General Public License
 */
-
-  use OSC\OM\HTML;
-  use OSC\OM\OSCOM;
-  use OSC\OM\Registry;
 
   class braintree_cc {
     var $code, $title, $description, $enabled;
@@ -39,6 +35,10 @@
       }
 
       $braintree_error = null;
+
+      if ( version_compare(PHP_VERSION, '5.2.1', '<') ) {
+        $braintree_error = sprintf(MODULE_PAYMENT_BRAINTREE_CC_ERROR_ADMIN_PHP, '5.2.1');
+      }
 
       if ( !isset($braintree_error) ) {
         $requiredExtensions = array('xmlwriter', 'SimpleXML', 'openssl', 'dom', 'hash', 'curl');
@@ -105,16 +105,14 @@
     function update_status() {
       global $order;
 
-      $OSCOM_Db = Registry::get('Db');
-
       if ( ($this->enabled == true) && ((int)MODULE_PAYMENT_BRAINTREE_CC_ZONE > 0) ) {
         $check_flag = false;
-        $Qcheck = $OSCOM_Db->get('zones_to_geo_zones', 'zone_id', ['geo_zone_id' => MODULE_PAYMENT_BRAINTREE_CC_ZONE, 'zone_country_id' => $order->billing['country']['id']], 'zone_id');
-        while ($Qcheck->fetch()) {
-          if ($Qcheck->valueInt('zone_id') < 1) {
+        $check_query = tep_db_query("select zone_id from " . TABLE_ZONES_TO_GEO_ZONES . " where geo_zone_id = '" . MODULE_PAYMENT_BRAINTREE_CC_ZONE . "' and zone_country_id = '" . $order->delivery['country']['id'] . "' order by zone_id");
+        while ($check = tep_db_fetch_array($check_query)) {
+          if ($check['zone_id'] < 1) {
             $check_flag = true;
             break;
-          } elseif ($Qcheck->valueInt('zone_id') == $order->billing['zone_id']) {
+          } elseif ($check['zone_id'] == $order->delivery['zone_id']) {
             $check_flag = true;
             break;
           }
@@ -142,9 +140,7 @@
     }
 
     function confirmation() {
-      global $order, $currencies;
-
-      $OSCOM_Db = Registry::get('Db');
+      global $customer_id, $order, $currencies, $currency;
 
       $months_array = array();
 
@@ -153,7 +149,7 @@
                                 'text' => tep_output_string_protected(sprintf('%02d', $i)));
       }
 
-      $today = getdate();
+      $today = getdate(); 
       $years_array = array();
 
       for ($i=$today['year']; $i < $today['year']+10; $i++) {
@@ -163,29 +159,29 @@
 
       $content = '';
 
-      if ( !$this->isValidCurrency($_SESSION['currency']) ) {
-        $content .= sprintf(MODULE_PAYMENT_BRAINTREE_CC_CURRENCY_CHARGE, $currencies->format($order->info['total'], true, DEFAULT_CURRENCY), DEFAULT_CURRENCY, $_SESSION['currency']);
+      if ( !$this->isValidCurrency($currency) ) {
+        $content .= sprintf(MODULE_PAYMENT_BRAINTREE_CC_CURRENCY_CHARGE, $currencies->format($order->info['total'], true, DEFAULT_CURRENCY), DEFAULT_CURRENCY, $currency);
       }
 
       if ( MODULE_PAYMENT_BRAINTREE_CC_TOKENS == 'True' ) {
-        $Qtokens = $OSCOM_Db->get('customers_braintree_tokens', ['id', 'card_type', 'number_filtered', 'expiry_date'], ['customers_id' => $_SESSION['customer_id']], 'date_added');
+        $tokens_query = tep_db_query("select id, card_type, number_filtered, expiry_date from customers_braintree_tokens where customers_id = '" . (int)$customer_id . "' order by date_added");
 
-        if ($Qtokens->fetch() !== false) {
+        if ( tep_db_num_rows($tokens_query) > 0 ) {
           $content .= '<table id="braintree_table" border="0" width="100%" cellspacing="0" cellpadding="2">';
 
-          do {
-            $content .= '<tr class="moduleRow" id="braintree_card_' . $Qtokens->valueInt('id') . '">' .
-                        '  <td width="40" valign="top"><input type="radio" name="braintree_card" value="' . $Qtokens->valueInt('id') . '" /></td>' .
-                        '  <td valign="top">' . MODULE_PAYMENT_BRAINTREE_CC_CREDITCARD_LAST_4 . '&nbsp;' . $Qtokens->valueProtected('number_filtered') . '&nbsp;&nbsp;' . tep_output_string_protected(substr($Qtokens->value('expiry_date'), 0, 2) . '/' . substr($Qtokens->value('expiry_date'), 2)) . '&nbsp;&nbsp;' . $Qtokens->valueProtected('card_type') . '</td>' .
+          while ( $tokens = tep_db_fetch_array($tokens_query) ) {
+            $content .= '<tr class="moduleRow" id="braintree_card_' . (int)$tokens['id'] . '">' . 
+                        '  <td width="40" valign="top"><input type="radio" name="braintree_card" value="' . (int)$tokens['id'] . '" /></td>' .
+                        '  <td valign="top">' . MODULE_PAYMENT_BRAINTREE_CC_CREDITCARD_LAST_4 . '&nbsp;' . tep_output_string_protected($tokens['number_filtered']) . '&nbsp;&nbsp;' . tep_output_string_protected(substr($tokens['expiry_date'], 0, 2) . '/' . substr($tokens['expiry_date'], 2)) . '&nbsp;&nbsp;' . tep_output_string_protected($tokens['card_type']) . '</td>' .
                         '</tr>';
 
             if ( MODULE_PAYMENT_BRAINTREE_CC_VERIFY_WITH_CVV == 'True' ) {
-              $content .= '<tr class="moduleRowExtra" id="braintree_card_cvv_' . $Qtokens->valueInt('id') . '">' .
+              $content .= '<tr class="moduleRowExtra" id="braintree_card_cvv_' . (int)$tokens['id'] . '">' .
                           '  <td width="40" valign="top">&nbsp;</td>' .
-                          '  <td valign="top">' . MODULE_PAYMENT_BRAINTREE_CC_CREDITCARD_CVV . '&nbsp;<input type="text" size="5" maxlength="4" autocomplete="off" data-encrypted-name="token_cvv[' . $Qtokens->valueInt('id') . ']" /></td>' .
+                          '  <td valign="top">' . MODULE_PAYMENT_BRAINTREE_CC_CREDITCARD_CVV . '&nbsp;<input type="text" size="5" maxlength="4" autocomplete="off" data-encrypted-name="token_cvv[' . (int)$tokens['id'] . ']" /></td>' .
                           '</tr>';
             }
-          } while ($Qtokens->fetch());
+          }
 
           $content .= '<tr class="moduleRow" id="braintree_card_0">' .
                       '  <td width="40" valign="top"><input type="radio" name="braintree_card" value="0" /></td>' .
@@ -198,7 +194,7 @@
       $content .= '<table id="braintree_table_new_card" border="0" width="100%" cellspacing="0" cellpadding="2">' .
                   '<tr>' .
                   '  <td width="30%">' . MODULE_PAYMENT_BRAINTREE_CC_CREDITCARD_OWNER . '</td>' .
-                  '  <td>' . HTML::inputField('name', $order->billing['firstname'] . ' ' . $order->billing['lastname']) . '</td>' .
+                  '  <td>' . tep_draw_input_field('name', $order->billing['firstname'] . ' ' . $order->billing['lastname']) . '</td>' .
                   '</tr>' .
                   '<tr>' .
                   '  <td width="30%">' . MODULE_PAYMENT_BRAINTREE_CC_CREDITCARD_NUMBER . '</td>' .
@@ -206,7 +202,7 @@
                   '</tr>' .
                   '<tr>' .
                   '  <td width="30%">' . MODULE_PAYMENT_BRAINTREE_CC_CREDITCARD_EXPIRY . '</td>' .
-                  '  <td>' . HTML::selectField('month', $months_array) . ' / ' . HTML::selectField('year', $years_array) . '</td>' .
+                  '  <td>' . tep_draw_pull_down_menu('month', $months_array) . ' / ' . tep_draw_pull_down_menu('year', $years_array) . '</td>' .
                   '</tr>';
 
       if ( MODULE_PAYMENT_BRAINTREE_CC_VERIFY_WITH_CVV == 'True' ) {
@@ -219,7 +215,7 @@
       if ( MODULE_PAYMENT_BRAINTREE_CC_TOKENS == 'True' ) {
         $content .= '<tr>' .
                     '  <td width="30%">&nbsp;</td>' .
-                    '  <td>' . HTML::checkboxField('cc_save', 'true') . ' ' . MODULE_PAYMENT_BRAINTREE_CC_CREDITCARD_SAVE . '</td>' .
+                    '  <td>' . tep_draw_checkbox_field('cc_save', 'true') . ' ' . MODULE_PAYMENT_BRAINTREE_CC_CREDITCARD_SAVE . '</td>' .
                     '</tr>';
       }
 
@@ -239,28 +235,29 @@
     }
 
     function before_process() {
-      global $order, $braintree_result, $braintree_token;
-
-      $OSCOM_Db = Registry::get('Db');
+      global $customer_id, $order, $HTTP_POST_VARS, $braintree_result, $braintree_token, $braintree_error;
 
       $braintree_token = null;
       $braintree_token_cvv = null;
       $braintree_error = null;
 
       if ( MODULE_PAYMENT_BRAINTREE_CC_TOKENS == 'True' ) {
-        if ( isset($_POST['braintree_card']) && is_numeric($_POST['braintree_card']) && ($_POST['braintree_card'] > 0) ) {
-          $Qtoken = $OSCOM_Db->get('customers_braintree_tokens', 'braintree_token', ['id' => (int)$_POST['braintree_card'], 'customers_id' => $_SESSION['customer_id']]);
+        if ( isset($HTTP_POST_VARS['braintree_card']) && is_numeric($HTTP_POST_VARS['braintree_card']) && ($HTTP_POST_VARS['braintree_card'] > 0) ) {
+          $token_query = tep_db_query("select braintree_token from customers_braintree_tokens where id = '" . (int)$HTTP_POST_VARS['braintree_card'] . "' and customers_id = '" . (int)$customer_id . "'");
 
-          if ($Qtoken->fetch() !== false) {
-            $braintree_token = $Qtoken->value('braintree_token');
+          if ( tep_db_num_rows($token_query) == 1 ) {
+            $token = tep_db_fetch_array($token_query);
+
+            $braintree_token = $token['braintree_token'];
 
             if ( MODULE_PAYMENT_BRAINTREE_CC_VERIFY_WITH_CVV == 'True' ) {
-              if ( isset($_POST['token_cvv']) && is_array($_POST['token_cvv']) && isset($_POST['token_cvv'][$_POST['braintree_card']]) ) {
-                $braintree_token_cvv = $_POST['token_cvv'][$_POST['braintree_card']];
+
+              if ( isset($HTTP_POST_VARS['token_cvv']) && is_array($HTTP_POST_VARS['token_cvv']) && isset($HTTP_POST_VARS['token_cvv'][$HTTP_POST_VARS['braintree_card']]) ) {
+                $braintree_token_cvv = $HTTP_POST_VARS['token_cvv'][$HTTP_POST_VARS['braintree_card']];
               }
 
               if ( !isset($braintree_token_cvv) || empty($braintree_token_cvv) ) {
-                OSCOM::redirect('checkout_payment.php', 'payment_error=' . $this->code . '&error=cardcvv', 'SSL');
+                tep_redirect(tep_href_link(FILENAME_CHECKOUT_PAYMENT, 'payment_error=' . $this->code . '&error=cardcvv', 'SSL'));
               }
             }
           }
@@ -268,13 +265,13 @@
       }
 
       if ( !isset($braintree_token) ) {
-        $cc_owner = isset($_POST['name']) ? $_POST['name'] : null;
-        $cc_number = isset($_POST['number']) ? $_POST['number'] : null;
-        $cc_expires_month = isset($_POST['month']) ? $_POST['month'] : null;
-        $cc_expires_year = isset($_POST['year']) ? $_POST['year'] : null;
+        $cc_owner = isset($HTTP_POST_VARS['name']) ? $HTTP_POST_VARS['name'] : null;
+        $cc_number = isset($HTTP_POST_VARS['number']) ? $HTTP_POST_VARS['number'] : null;
+        $cc_expires_month = isset($HTTP_POST_VARS['month']) ? $HTTP_POST_VARS['month'] : null;
+        $cc_expires_year = isset($HTTP_POST_VARS['year']) ? $HTTP_POST_VARS['year'] : null;
 
         if ( MODULE_PAYMENT_BRAINTREE_CC_VERIFY_WITH_CVV == 'True' ) {
-          $cc_cvv = isset($_POST['cvv']) ? $_POST['cvv'] : null;
+          $cc_cvv = isset($HTTP_POST_VARS['cvv']) ? $HTTP_POST_VARS['cvv'] : null;
         }
 
         $months_array = array();
@@ -283,7 +280,7 @@
           $months_array[] = sprintf('%02d', $i);
         }
 
-        $today = getdate();
+        $today = getdate(); 
         $years_array = array();
 
         for ($i=$today['year']; $i < $today['year']+10; $i++) {
@@ -291,28 +288,28 @@
         }
 
         if ( !isset($cc_owner) || empty($cc_owner) ) {
-          OSCOM::redirect('checkout_payment.php', 'payment_error=' . $this->code . '&error=cardowner', 'SSL');
+          tep_redirect(tep_href_link(FILENAME_CHECKOUT_PAYMENT, 'payment_error=' . $this->code . '&error=cardowner', 'SSL'));
         }
 
         if ( !isset($cc_number) || empty($cc_number) ) {
-          OSCOM::redirect('checkout_payment.php', 'payment_error=' . $this->code . '&error=cardnumber', 'SSL');
+          tep_redirect(tep_href_link(FILENAME_CHECKOUT_PAYMENT, 'payment_error=' . $this->code . '&error=cardnumber', 'SSL'));
         }
 
         if ( !isset($cc_expires_month) || !in_array($cc_expires_month, $months_array) ) {
-          OSCOM::redirect('checkout_payment.php', 'payment_error=' . $this->code . '&error=cardexpires', 'SSL');
+          tep_redirect(tep_href_link(FILENAME_CHECKOUT_PAYMENT, 'payment_error=' . $this->code . '&error=cardexpires', 'SSL'));
         }
 
         if ( !isset($cc_expires_year) || !in_array($cc_expires_year, $years_array) ) {
-          OSCOM::redirect('checkout_payment.php', 'payment_error=' . $this->code . '&error=cardexpires', 'SSL');
+          tep_redirect(tep_href_link(FILENAME_CHECKOUT_PAYMENT, 'payment_error=' . $this->code . '&error=cardexpires', 'SSL'));
         }
 
         if ( ($cc_expires_year == date('Y')) && ($cc_expires_month < date('m')) ) {
-          OSCOM::redirect('checkout_payment.php', 'payment_error=' . $this->code . '&error=cardexpires', 'SSL');
+          tep_redirect(tep_href_link(FILENAME_CHECKOUT_PAYMENT, 'payment_error=' . $this->code . '&error=cardexpires', 'SSL'));
         }
 
         if ( MODULE_PAYMENT_BRAINTREE_CC_VERIFY_WITH_CVV == 'True' ) {
           if ( !isset($cc_cvv) || empty($cc_cvv) ) {
-            OSCOM::redirect('checkout_payment.php', 'payment_error=' . $this->code . '&error=cardcvv', 'SSL');
+            tep_redirect(tep_href_link(FILENAME_CHECKOUT_PAYMENT, 'payment_error=' . $this->code . '&error=cardcvv', 'SSL'));
           }
         }
       }
@@ -370,7 +367,7 @@
           $data['creditCard']['cvv'] = $cc_cvv;
         }
 
-        if ( (MODULE_PAYMENT_BRAINTREE_CC_TOKENS == 'True') && isset($_POST['cc_save']) && ($_POST['cc_save'] == 'true') ) {
+        if ( (MODULE_PAYMENT_BRAINTREE_CC_TOKENS == 'True') && isset($HTTP_POST_VARS['cc_save']) && ($HTTP_POST_VARS['cc_save'] == 'true') ) {
           $data['options']['storeInVaultOnSuccess'] = true;
         }
       } else {
@@ -395,6 +392,10 @@
 
       if ( $braintree_result->transaction ) {
         $braintree_error = $braintree_result->message;
+
+        if ( !empty($braintree_error) ) {
+          tep_session_register('braintree_error');
+        }
       } else {
         $braintree_error = '';
 
@@ -407,39 +408,36 @@
             $braintree_error = substr($braintree_error, 0, -1);
           }
         }
+
+        if ( !empty($braintree_error) ) {
+          tep_session_register('braintree_error');
+        }
       }
 
-      if (!empty($braintree_error)) {
-        $_SESSION['braintree_error'] = $braintree_error;
-      }
-
-      OSCOM::redirect('checkout_payment.php', 'payment_error=' . $this->code, 'SSL');
+      tep_redirect(tep_href_link(FILENAME_CHECKOUT_PAYMENT, 'payment_error=' . $this->code, 'SSL'));
     }
 
     function after_process() {
-      global $insert_id, $braintree_result, $braintree_token;
-
-      $OSCOM_Db = Registry::get('Db');
+      global $HTTP_POST_VARS, $customer_id, $insert_id, $braintree_result, $braintree_token;
 
       $status_comment = array('Transaction ID: ' . $braintree_result->transaction->id);
 
-      if ( (MODULE_PAYMENT_BRAINTREE_CC_TOKENS == 'True') && isset($_POST['cc_save']) && ($_POST['cc_save'] == 'true') && !isset($braintree_token) && isset($braintree_result->transaction->creditCard['token']) ) {
-        $token = $braintree_result->transaction->creditCard['token'];
-        $type = $braintree_result->transaction->creditCard['cardType'];
-        $number = $braintree_result->transaction->creditCard['last4'];
-        $expiry = $braintree_result->transaction->creditCard['expirationMonth'] . $braintree_result->transaction->creditCard['expirationYear'];
+      if ( (MODULE_PAYMENT_BRAINTREE_CC_TOKENS == 'True') && isset($HTTP_POST_VARS['cc_save']) && ($HTTP_POST_VARS['cc_save'] == 'true') && !isset($braintree_token) && isset($braintree_result->transaction->creditCard['token']) ) {
+        $token = tep_db_prepare_input($braintree_result->transaction->creditCard['token']);
+        $type = tep_db_prepare_input($braintree_result->transaction->creditCard['cardType']);
+        $number = tep_db_prepare_input($braintree_result->transaction->creditCard['last4']);
+        $expiry = tep_db_prepare_input($braintree_result->transaction->creditCard['expirationMonth'] . $braintree_result->transaction->creditCard['expirationYear']);
 
-        $Qcheck = $OSCOM_Db->get('customers_braintree_tokens', 'id', ['customers_id' => $_SESSION['customer_id'], 'braintree_token' => $token], null, 1);
-
-        if ($Qcheck->fetch() === false) {
-          $sql_data_array = array('customers_id' => (int)$_SESSION['customer_id'],
+        $check_query = tep_db_query("select id from customers_braintree_tokens where customers_id = '" . (int)$customer_id . "' and braintree_token = '" . tep_db_input($token) . "' limit 1");
+        if ( tep_db_num_rows($check_query) < 1 ) {
+          $sql_data_array = array('customers_id' => (int)$customer_id,
                                   'braintree_token' => $token,
                                   'card_type' => $type,
                                   'number_filtered' => $number,
                                   'expiry_date' => $expiry,
                                   'date_added' => 'now()');
 
-          $OSCOM_Db->save('customers_braintree_tokens', $sql_data_array);
+          tep_db_perform('customers_braintree_tokens', $sql_data_array);
         }
 
         $status_comment[] = 'Token Created: Yes';
@@ -453,14 +451,16 @@
                               'customer_notified' => '0',
                               'comments' => implode("\n", $status_comment));
 
-      $OSCOM_Db->save('orders_status_history', $sql_data_array);
+      tep_db_perform(TABLE_ORDERS_STATUS_HISTORY, $sql_data_array);
     }
 
     function get_error() {
+      global $HTTP_GET_VARS, $braintree_error;
+
       $message = MODULE_PAYMENT_BRAINTREE_CC_ERROR_GENERAL;
 
-      if ( isset($_GET['error']) && !empty($_GET['error']) ) {
-        switch ($_GET['error']) {
+      if ( isset($HTTP_GET_VARS['error']) && !empty($HTTP_GET_VARS['error']) ) {
+        switch ($HTTP_GET_VARS['error']) {
           case 'cardowner':
             $message = MODULE_PAYMENT_BRAINTREE_CC_ERROR_CARDOWNER;
             break;
@@ -477,10 +477,10 @@
             $message = MODULE_PAYMENT_BRAINTREE_CC_ERROR_CARDCVV;
             break;
         }
-      } elseif ( isset($_SESSION['braintree_error']) ) {
-        $message = $_SESSION['braintree_error'] . ' ' . $message;
+      } elseif ( tep_session_is_registered('braintree_error') ) {
+        $message = $braintree_error . ' ' . $message;
 
-        unset($_SESSION['braintree_error']);
+        tep_session_unregister('braintree_error');
       }
 
       $error = array('title' => MODULE_PAYMENT_BRAINTREE_CC_ERROR_TITLE,
@@ -490,12 +490,14 @@
     }
 
     function check() {
-      return defined('MODULE_PAYMENT_BRAINTREE_CC_STATUS');
+      if (!isset($this->_check)) {
+        $check_query = tep_db_query("select configuration_value from " . TABLE_CONFIGURATION . " where configuration_key = 'MODULE_PAYMENT_BRAINTREE_CC_STATUS'");
+        $this->_check = tep_db_num_rows($check_query);
+      }
+      return $this->_check;
     }
 
     function install($parameter = null) {
-      $OSCOM_Db = Registry::get('Db');
-
       $params = $this->getParams();
 
       if (isset($parameter)) {
@@ -523,12 +525,12 @@
           $sql_data_array['use_function'] = $data['use_func'];
         }
 
-        $OSCOM_Db->save('configuration', $sql_data_array);
+        tep_db_perform(TABLE_CONFIGURATION, $sql_data_array);
       }
     }
 
     function remove() {
-      return Registry::get('Db')->exec('delete from :table_configuration where configuration_key in ("' . implode('", "', $this->keys()) . '")');
+      tep_db_query("delete from " . TABLE_CONFIGURATION . " where configuration_key in ('" . implode("', '", $this->keys()) . "')");
     }
 
     function keys() {
@@ -546,11 +548,7 @@
     }
 
     function getParams() {
-      $OSCOM_Db = Registry::get('Db');
-
-      $Qcheck = $OSCOM_Db->query('show tables like "customers_braintree_tokens"');
-
-      if ($Qcheck->fetch() === false) {
+      if ( tep_db_num_rows(tep_db_query("show tables like 'customers_braintree_tokens'")) != 1 ) {
         $sql = <<<EOD
 CREATE TABLE customers_braintree_tokens (
   id int NOT NULL auto_increment,
@@ -566,30 +564,32 @@ CREATE TABLE customers_braintree_tokens (
 );
 EOD;
 
-        $OSCOM_Db->exec($sql);
+        tep_db_query($sql);
       }
 
       if (!defined('MODULE_PAYMENT_BRAINTREE_CC_TRANSACTION_ORDER_STATUS_ID')) {
-        $Qcheck = $OSCOM_Db->get('orders_status', 'orders_status_id', ['orders_status_name' => 'Braintree [Transactions]'], null, 1);
+        $check_query = tep_db_query("select orders_status_id from " . TABLE_ORDERS_STATUS . " where orders_status_name = 'Braintree [Transactions]' limit 1");
 
-        if ($Qcheck->fetch() === false) {
-          $Qstatus = $OSCOM_Db->get('orders_status', 'max(orders_status_id) as status_id');
+        if (tep_db_num_rows($check_query) < 1) {
+          $status_query = tep_db_query("select max(orders_status_id) as status_id from " . TABLE_ORDERS_STATUS);
+          $status = tep_db_fetch_array($status_query);
 
-          $status_id = $Qstatus->valueInt('status_id') + 1;
+          $status_id = $status['status_id']+1;
 
           $languages = tep_get_languages();
 
           foreach ($languages as $lang) {
-            $OSCOM_Db->save('orders_status', [
-              'orders_status_id' => $status_id,
-              'language_id' => $lang['id'],
-              'orders_status_name' => 'Braintree [Transactions]',
-              'public_flag' => 0,
-              'downloads_flag' => 0
-            ]);
+            tep_db_query("insert into " . TABLE_ORDERS_STATUS . " (orders_status_id, language_id, orders_status_name) values ('" . $status_id . "', '" . $lang['id'] . "', 'Braintree [Transactions]')");
+          }
+
+          $flags_query = tep_db_query("describe " . TABLE_ORDERS_STATUS . " public_flag");
+          if (tep_db_num_rows($flags_query) == 1) {
+            tep_db_query("update " . TABLE_ORDERS_STATUS . " set public_flag = 0 and downloads_flag = 0 where orders_status_id = '" . $status_id . "'");
           }
         } else {
-          $status_id = $Qcheck->valueInt('orders_status_id');
+          $check = tep_db_fetch_array($check_query);
+
+          $status_id = $check['orders_status_id'];
         }
       } else {
         $status_id = MODULE_PAYMENT_BRAINTREE_CC_TRANSACTION_ORDER_STATUS_ID;
@@ -652,10 +652,10 @@ EOD;
     }
 
     function format_raw($number, $currency_code = '', $currency_value = '') {
-      global $currencies;
+      global $currencies, $currency;
 
       if (empty($currency_code) || !$currencies->is_set($currency_code)) {
-        $currency_code = $_SESSION['currency'];
+        $currency_code = $currency;
       }
 
       if (empty($currency_value) || !is_numeric($currency_value)) {
@@ -666,7 +666,9 @@ EOD;
     }
 
     function getTransactionCurrency() {
-      return $this->isValidCurrency($_SESSION['currency']) ? $_SESSION['currency'] : DEFAULT_CURRENCY;
+      global $currency;
+
+      return $this->isValidCurrency($currency) ? $currency : DEFAULT_CURRENCY;
     }
 
     function getMerchantAccountId($currency) {
@@ -696,7 +698,7 @@ EOD;
     }
 
     function deleteCard($token, $token_id) {
-      $OSCOM_Db = Registry::get('Db');
+      global $customer_id;
 
       Braintree_Configuration::environment(MODULE_PAYMENT_BRAINTREE_CC_TRANSACTION_SERVER == 'Live' ? 'production' : 'sandbox');
       Braintree_Configuration::merchantId(MODULE_PAYMENT_BRAINTREE_CC_MERCHANT_ID);
@@ -708,7 +710,9 @@ EOD;
       } catch ( Exception $e ) {
       }
 
-      return $OSCOM_Db->delete('customers_braintree_tokens', ['id' => $token_id, 'customers_id' => $_SESSION['customer_id'], 'braintree_token' => $token]) === 1;
+      tep_db_query("delete from customers_braintree_tokens where id = '" . (int)$token_id . "' and customers_id = '" . (int)$customer_id . "' and braintree_token = '" . tep_db_prepare_input(tep_db_input($token)) . "'");
+
+      return (tep_db_affected_rows() === 1);
     }
 
     function templateClassExists() {
@@ -719,8 +723,8 @@ EOD;
       $braintree_client_key = MODULE_PAYMENT_BRAINTREE_CC_CLIENT_KEY;
 
       $js = <<<EOD
-<script src="https://js.braintreegateway.com/v1/braintree.js"></script>
-<script>
+<script type="text/javascript" src="https://js.braintreegateway.com/v1/braintree.js"></script>
+<script type="text/javascript">
 $(function() {
   $('form[name="checkout_confirmation"]').attr('id', 'braintree-payment-form');
 
@@ -790,7 +794,7 @@ EOD;
   }
 
   function tep_cfg_braintree_cc_set_client_key($value, $name) {
-    return HTML::textareaField('configuration[' . $name . ']', '50', '12', $value);
+    return tep_draw_textarea_field('configuration[' . $name . ']', '', '50', '12', $value);
   }
 
   function tep_cfg_braintree_cc_show_client_key($key) {
@@ -834,17 +838,17 @@ EOD;
         $result .= '</strong>';
       }
 
-      $result .= '&nbsp;' . HTML::inputField('braintree_ma[' . $c . ']', (isset($data[$c]) ? $data[$c] : '')) . '<br />';
+      $result .= '&nbsp;' . tep_draw_input_field('braintree_ma[' . $c . ']', (isset($data[$c]) ? $data[$c] : '')) . '<br />';
     }
 
     if ( !empty($result) ) {
       $result = substr($result, 0, -6);
     }
 
-    $result .= HTML::hiddenField('configuration[' . $key . ']', $value);
+    $result .= tep_draw_hidden_field('configuration[' . $key . ']', $value);
 
     $result .= <<<EOD
-<script>
+<script type="text/javascript">
 $(function() {
   $('form[name="modules"]').submit(function() {
     var ma_string = '';

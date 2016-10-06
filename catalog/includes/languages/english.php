@@ -5,7 +5,7 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2013 osCommerce
 
   Released under the GNU General Public License
 */
@@ -50,9 +50,17 @@ define('CHARSET', 'utf-8');
 define('TITLE', STORE_NAME);
 
 // header text in includes/header.php
+define('HEADER_TITLE_CREATE_ACCOUNT', 'Create an Account');
 define('HEADER_TITLE_MY_ACCOUNT', 'My Account');
-define('HEADER_TITLE_TOP', '<i class="glyphicon glyphicon-home"><span class="sr-only">Home</span></i>');
+define('HEADER_TITLE_CART_CONTENTS', 'Cart Contents');
+define('HEADER_TITLE_CHECKOUT', 'Checkout');
+define('HEADER_TITLE_TOP', 'Top');
 define('HEADER_TITLE_CATALOG', 'Catalog');
+define('HEADER_TITLE_LOGOFF', 'Log Off');
+define('HEADER_TITLE_LOGIN', 'Log In');
+
+// footer text in includes/footer.php
+define('FOOTER_TEXT_REQUESTS_SINCE', 'requests since');
 
 // text for gender
 define('MALE', 'Male');
@@ -71,6 +79,7 @@ define('CHECKOUT_BAR_FINISHED', 'Finished!');
 
 // pull down default text
 define('PULL_DOWN_DEFAULT', 'Please Select');
+define('TYPE_BELOW', 'Type Below');
 
 // javascript messages
 define('JS_ERROR', 'Errors have occured during the process of your form.\n\nPlease make the following corrections:\n\n');
@@ -91,81 +100,68 @@ define('CATEGORY_CONTACT', 'Your Contact Information');
 define('CATEGORY_OPTIONS', 'Options');
 define('CATEGORY_PASSWORD', 'Your Password');
 
-define('ENTRY_COMPANY', 'Company Name');
+define('ENTRY_COMPANY', 'Company Name:');
 define('ENTRY_COMPANY_TEXT', '');
-define('ENTRY_GENDER', 'Gender');
+define('ENTRY_GENDER', 'Gender:');
 define('ENTRY_GENDER_ERROR', 'Please select your Gender.');
-define('ENTRY_GENDER_TEXT', '');
-define('ENTRY_FIRST_NAME', 'First Name');
+define('ENTRY_GENDER_TEXT', '*');
+define('ENTRY_FIRST_NAME', 'First Name:');
 define('ENTRY_FIRST_NAME_ERROR', 'Your First Name must contain a minimum of ' . ENTRY_FIRST_NAME_MIN_LENGTH . ' characters.');
-define('ENTRY_FIRST_NAME_TEXT', '');
-define('ENTRY_LAST_NAME', 'Last Name');
+define('ENTRY_FIRST_NAME_TEXT', '*');
+define('ENTRY_LAST_NAME', 'Last Name:');
 define('ENTRY_LAST_NAME_ERROR', 'Your Last Name must contain a minimum of ' . ENTRY_LAST_NAME_MIN_LENGTH . ' characters.');
-define('ENTRY_LAST_NAME_TEXT', '');
-define('ENTRY_DATE_OF_BIRTH', 'Date of Birth');
+define('ENTRY_LAST_NAME_TEXT', '*');
+define('ENTRY_DATE_OF_BIRTH', 'Date of Birth:');
 define('ENTRY_DATE_OF_BIRTH_ERROR', 'Your Date of Birth must be in this format: MM/DD/YYYY (eg 05/21/1970)');
-define('ENTRY_DATE_OF_BIRTH_TEXT', '(eg. 05/21/1970)');
-define('ENTRY_EMAIL_ADDRESS', 'E-Mail Address');
-define('ENTRY_EMAIL_ADDRESS_ERROR', 'Your E-Mail Address does not appear to be formatted correctly.');
+define('ENTRY_DATE_OF_BIRTH_TEXT', '* (eg. 05/21/1970)');
+define('ENTRY_EMAIL_ADDRESS', 'E-Mail Address:');
+define('ENTRY_EMAIL_ADDRESS_ERROR', 'Your E-Mail Address must contain a minimum of ' . ENTRY_EMAIL_ADDRESS_MIN_LENGTH . ' characters.');
 define('ENTRY_EMAIL_ADDRESS_CHECK_ERROR', 'Your E-Mail Address does not appear to be valid - please make any necessary corrections.');
 define('ENTRY_EMAIL_ADDRESS_ERROR_EXISTS', 'Your E-Mail Address already exists in our records - please log in with the e-mail address or create an account with a different address.');
-define('ENTRY_EMAIL_ADDRESS_TEXT', '');
-define('ENTRY_STREET_ADDRESS', 'Street Address');
+define('ENTRY_EMAIL_ADDRESS_TEXT', '*');
+define('ENTRY_STREET_ADDRESS', 'Street Address:');
 define('ENTRY_STREET_ADDRESS_ERROR', 'Your Street Address must contain a minimum of ' . ENTRY_STREET_ADDRESS_MIN_LENGTH . ' characters.');
-define('ENTRY_STREET_ADDRESS_TEXT', '');
-define('ENTRY_SUBURB', 'Suburb');
+define('ENTRY_STREET_ADDRESS_TEXT', '*');
+define('ENTRY_SUBURB', 'Suburb:');
 define('ENTRY_SUBURB_TEXT', '');
-define('ENTRY_POST_CODE', 'Post Code');
+define('ENTRY_POST_CODE', 'Post Code:');
 define('ENTRY_POST_CODE_ERROR', 'Your Post Code must contain a minimum of ' . ENTRY_POSTCODE_MIN_LENGTH . ' characters.');
-define('ENTRY_POST_CODE_TEXT', '');
-define('ENTRY_CITY', 'City');
+define('ENTRY_POST_CODE_TEXT', '*');
+define('ENTRY_CITY', 'City:');
 define('ENTRY_CITY_ERROR', 'Your City must contain a minimum of ' . ENTRY_CITY_MIN_LENGTH . ' characters.');
-define('ENTRY_CITY_TEXT', '');
-define('ENTRY_STATE', 'State/Province');
-define('ENTRY_STATE_ERROR', 'State does not appear to be formatted correctly.');
+define('ENTRY_CITY_TEXT', '*');
+define('ENTRY_STATE', 'State/Province:');
+define('ENTRY_STATE_ERROR', 'Your State must contain a minimum of ' . ENTRY_STATE_MIN_LENGTH . ' characters.');
 define('ENTRY_STATE_ERROR_SELECT', 'Please select a state from the States pull down menu.');
-define('ENTRY_STATE_TEXT', '');
-define('ENTRY_COUNTRY', 'Country');
+define('ENTRY_STATE_TEXT', '*');
+define('ENTRY_COUNTRY', 'Country:');
 define('ENTRY_COUNTRY_ERROR', 'You must select a country from the Countries pull down menu.');
-define('ENTRY_COUNTRY_TEXT', '');
-define('ENTRY_TELEPHONE_NUMBER', 'Telephone Number');
+define('ENTRY_COUNTRY_TEXT', '*');
+define('ENTRY_TELEPHONE_NUMBER', 'Telephone Number:');
 define('ENTRY_TELEPHONE_NUMBER_ERROR', 'Your Telephone Number must contain a minimum of ' . ENTRY_TELEPHONE_MIN_LENGTH . ' characters.');
-define('ENTRY_TELEPHONE_NUMBER_TEXT', '');
-define('ENTRY_FAX_NUMBER', 'Fax Number');
+define('ENTRY_TELEPHONE_NUMBER_TEXT', '*');
+define('ENTRY_FAX_NUMBER', 'Fax Number:');
 define('ENTRY_FAX_NUMBER_TEXT', '');
-define('ENTRY_NEWSLETTER', 'Newsletter');
+define('ENTRY_NEWSLETTER', 'Newsletter:');
 define('ENTRY_NEWSLETTER_TEXT', '');
 define('ENTRY_NEWSLETTER_YES', 'Subscribed');
 define('ENTRY_NEWSLETTER_NO', 'Unsubscribed');
-define('ENTRY_PASSWORD', 'Password');
+define('ENTRY_PASSWORD', 'Password:');
 define('ENTRY_PASSWORD_ERROR', 'Your Password must contain a minimum of ' . ENTRY_PASSWORD_MIN_LENGTH . ' characters.');
 define('ENTRY_PASSWORD_ERROR_NOT_MATCHING', 'The Password Confirmation must match your Password.');
-define('ENTRY_PASSWORD_TEXT', '');
-define('ENTRY_PASSWORD_CONFIRMATION', 'Password Confirmation');
-define('ENTRY_PASSWORD_CONFIRMATION_TEXT', '');
-define('ENTRY_PASSWORD_CURRENT', 'Current Password');
-define('ENTRY_PASSWORD_CURRENT_TEXT', '');
+define('ENTRY_PASSWORD_TEXT', '*');
+define('ENTRY_PASSWORD_CONFIRMATION', 'Password Confirmation:');
+define('ENTRY_PASSWORD_CONFIRMATION_TEXT', '*');
+define('ENTRY_PASSWORD_CURRENT', 'Current Password:');
+define('ENTRY_PASSWORD_CURRENT_TEXT', '*');
 define('ENTRY_PASSWORD_CURRENT_ERROR', 'Your Password must contain a minimum of ' . ENTRY_PASSWORD_MIN_LENGTH . ' characters.');
-define('ENTRY_PASSWORD_NEW', 'New Password');
-define('ENTRY_PASSWORD_NEW_TEXT', '');
+define('ENTRY_PASSWORD_NEW', 'New Password:');
+define('ENTRY_PASSWORD_NEW_TEXT', '*');
 define('ENTRY_PASSWORD_NEW_ERROR', 'Your new Password must contain a minimum of ' . ENTRY_PASSWORD_MIN_LENGTH . ' characters.');
 define('ENTRY_PASSWORD_NEW_ERROR_NOT_MATCHING', 'The Password Confirmation must match your new Password.');
-// new placeholders
-define('ENTRY_PRICE_FROM_TEXT', '');
-define('ENTRY_PRICE_TO_TEXT', '');
-define('ENTRY_DATE_FROM_TEXT', '');
-define('ENTRY_DATE_TO_TEXT', '');
-define('ENTRY_COMMENTS_TEXT', '');
-define('ENTRY_NAME_TEXT', '');
-define('ENTRY_ENQUIRY_TEXT', '');
-define('ENTRY_REVIEW_TEXT', '');
-define('ENTRY_FORM_FIELD_CUSTOMER_NAME_TEXT', '');
-define('ENTRY_FORM_FIELD_CUSTOMER_EMAIL_TEXT', '');
-define('ENTRY_FORM_FIELD_FRIEND_NAME_TEXT', '');
-define('ENTRY_FORM_FIELD_FRIEND_EMAIL_TEXT', '');
-define('ENTRY_FORM_TITLE_FRIEND_MESSAGE_TEXT', '');
+define('PASSWORD_HIDDEN', '--HIDDEN--');
 
-define('FORM_REQUIRED_INFORMATION', '<span class="glyphicon glyphicon-asterisk inputRequirement"></span> Required information');
+define('FORM_REQUIRED_INFORMATION', '* Required information');
 
 // constants for use in tep_prev_next_display function
 define('TEXT_RESULT_PAGE', 'Result Pages:');
@@ -202,8 +198,6 @@ define('IMAGE_BUTTON_HISTORY', 'Order History');
 define('IMAGE_BUTTON_LOGIN', 'Sign In');
 define('IMAGE_BUTTON_IN_CART', 'Add to Cart');
 define('IMAGE_BUTTON_NOTIFICATIONS', 'Notifications');
-define('IMAGE_BUTTON_PAY_TOTAL_NOW', 'Pay Now (%s)');
-define('IMAGE_BUTTON_PAY_TOTAL_PROCESSING', 'Processing, please wait ..');
 define('IMAGE_BUTTON_QUICK_FIND', 'Quick Find');
 define('IMAGE_BUTTON_REMOVE_NOTIFICATIONS', 'Remove Notifications');
 define('IMAGE_BUTTON_REVIEWS', 'Reviews');
@@ -217,9 +211,12 @@ define('IMAGE_BUTTON_WRITE_REVIEW', 'Write Review');
 define('SMALL_IMAGE_BUTTON_DELETE', 'Delete');
 define('SMALL_IMAGE_BUTTON_EDIT', 'Edit');
 define('SMALL_IMAGE_BUTTON_VIEW', 'View');
-define('SMALL_IMAGE_BUTTON_BUY', 'Buy');
 
 define('ICON_ARROW_RIGHT', 'more');
+define('ICON_CART', 'In Cart');
+define('ICON_ERROR', 'Error');
+define('ICON_SUCCESS', 'Success');
+define('ICON_WARNING', 'Warning');
 
 define('TEXT_GREETING_PERSONAL', 'Welcome back <span class="greetUser">%s!</span> Would you like to see which <a href="%s"><u>new products</u></a> are available to purchase?');
 define('TEXT_GREETING_PERSONAL_RELOGON', '<small>If you are not %s, please <a href="%s"><u>log yourself in</u></a> with your account information.</small>');
@@ -236,28 +233,17 @@ define('TEXT_REVIEW_RATING', 'Rating: %s [%s]');
 define('TEXT_REVIEW_DATE_ADDED', 'Date Added: %s');
 define('TEXT_NO_REVIEWS', 'There are currently no product reviews.');
 
+define('TEXT_NO_NEW_PRODUCTS', 'There are currently no products.');
+
 define('TEXT_UNKNOWN_TAX_RATE', 'Unknown tax rate');
+
+define('TEXT_REQUIRED', '<span class="errorText">Required</span>');
+
+define('ERROR_TEP_MAIL', '<font face="Verdana, Arial" size="2" color="#ff0000"><strong><small>TEP ERROR:</small> Cannot send the email through the specified SMTP server. Please check your php.ini setting and correct the SMTP server if necessary.</strong></font>');
 
 define('TEXT_CCVAL_ERROR_INVALID_DATE', 'The expiry date entered for the credit card is invalid. Please check the date and try again.');
 define('TEXT_CCVAL_ERROR_INVALID_NUMBER', 'The credit card number entered is invalid. Please check the number and try again.');
 define('TEXT_CCVAL_ERROR_UNKNOWN_CARD', 'The first four digits of the number entered are: %s. If that number is correct, we do not accept that type of credit card. If it is wrong, please try again.');
 
-// message for required inputs
-define('FORM_REQUIRED_INPUT', '<span><span class="glyphicon glyphicon-asterisk form-control-feedback inputRequirement"></span></span>');
-
-// search placeholder
-define('TEXT_SEARCH_PLACEHOLDER', 'Search Keywords...');
-
-// reviews
-define('REVIEWS_TEXT_RATED', 'Rated %s by <span title="%s" itemprop="author" itemscope itemtype="http://schema.org/Person"><span itemprop="name">%s</span></span>');
-define('REVIEWS_TEXT_AVERAGE', 'Average rating based on <span itemprop="ratingCount">%s</span> review(s) %s');
-
-// product notifications
-define('PRODUCT_SUBSCRIBED', '%s has been added to your Notification List');
-define('PRODUCT_UNSUBSCRIBED', '%s has been removed from your Notification List');
-define('PRODUCT_ADDED', '%s has been added to your Cart');
-define('PRODUCT_REMOVED', '%s has been removed from your Cart');
-
-// sorting product_listing module
-define('TEXT_SORT_BY', 'Sort By ');
-
+define('FOOTER_TEXT_BODY', 'Copyright &copy; ' . date('Y') . ' <a href="' . tep_href_link(FILENAME_DEFAULT) . '">' . STORE_NAME . '</a><br />Powered by <a href="http://www.oscommerce.com" target="_blank">osCommerce</a>');
+?>

@@ -5,12 +5,10 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2013 osCommerce
 
   Released under the GNU General Public License
 */
-
-  use OSC\OM\Db;
 
   header('Cache-Control: no-cache, must-revalidate');
   header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
@@ -19,75 +17,56 @@
 
   $dir_fs_www_root = dirname(__FILE__);
 
-  $result = false;
-
-  if (isset($_GET['action']) && !empty($_GET['action'])) {
-    switch ($_GET['action']) {
+  if (isset($HTTP_GET_VARS['action']) && !empty($HTTP_GET_VARS['action'])) {
+    switch ($HTTP_GET_VARS['action']) {
       case 'dbCheck':
-        try {
-          $OSCOM_Db = Db::initialize($_GET['server'], $_GET['username'], $_GET['password'], $_GET['name']);
-        } catch (\Exception $e) {
-          $result = $e->getCode() . '|' . $e->getMessage();
+        $db = array('DB_SERVER' => trim(rawurldecode($HTTP_GET_VARS['server'])),
+                    'DB_SERVER_USERNAME' => trim(rawurldecode($HTTP_GET_VARS['username'])),
+                    'DB_SERVER_PASSWORD' => trim(rawurldecode($HTTP_GET_VARS['password'])),
+                    'DB_DATABASE' => trim(rawurldecode($HTTP_GET_VARS['name']))
+                   );
+
+        $db_error = false;
+        osc_db_connect($db['DB_SERVER'], $db['DB_SERVER_USERNAME'], $db['DB_SERVER_PASSWORD']);
+
+        if ($db_error == false) {
+          osc_db_select_db($db['DB_DATABASE']);
         }
 
-        if ($result === false) {
-          $result = true;
+        if ($db_error != false) {
+          echo '[[0|' . $db_error . ']]';
         } else {
-          $error = explode('|', $result, 2);
-
-          if (($error[0] == '1049') && isset($_GET['createDb']) && ($_GET['createDb'] == 'true')) {
-            $result = false;
-
-            try {
-              $OSCOM_Db = Db::initialize($_GET['server'], $_GET['username'], $_GET['password'], '');
-
-              $OSCOM_Db->exec('create database ' . Db::prepareIdentifier($_GET['name']) . ' character set utf8 collate utf8_unicode_ci');
-            } catch (\Exception $e) {
-              $result = $e->getCode() . '|' . $e->getMessage();
-            }
-
-            if ($result === false) {
-              $result = true;
-            }
-          }
+          echo '[[1]]';
         }
 
+        exit;
         break;
 
       case 'dbImport':
-        try {
-          $OSCOM_Db = Db::initialize($_GET['server'], $_GET['username'], $_GET['password'], $_GET['name']);
-          $OSCOM_Db->importSQL($dir_fs_www_root . '/oscommerce.sql');
-        } catch (\Exception $e) {
-          $result = $e->getCode() . '|' . $e->getMessage();
+        $db = array('DB_SERVER' => trim(rawurldecode($HTTP_GET_VARS['server'])),
+                    'DB_SERVER_USERNAME' => trim(rawurldecode($HTTP_GET_VARS['username'])),
+                    'DB_SERVER_PASSWORD' => trim(rawurldecode($HTTP_GET_VARS['password'])),
+                    'DB_DATABASE' => trim(rawurldecode($HTTP_GET_VARS['name'])),
+                   );
+
+        osc_db_connect($db['DB_SERVER'], $db['DB_SERVER_USERNAME'], $db['DB_SERVER_PASSWORD']);
+
+        $db_error = false;
+        $sql_file = $dir_fs_www_root . '/oscommerce.sql';
+
+        osc_set_time_limit(0);
+        osc_db_install($db['DB_DATABASE'], $sql_file);
+
+        if ($db_error != false) {
+          echo '[[0|' . $db_error . ']]';
+        } else {
+          echo '[[1]]';
         }
 
-        if ($result === false) {
-          $result = true;
-        }
-
+        exit;
         break;
     }
   }
 
-  if ($result === true) {
-    echo '[[1|success]]';
-  } else {
-    $error_no = '-100';
-    $error_msg = 'noActionError';
-
-    if ($result !== false) {
-      $error = explode('|', $result, 2);
-
-      if (count($error) === 2) {
-        $error_no = $error[0];
-        $error_msg = $error[1];
-      } else {
-        $error_code = 0;
-        $error_msg = $error[0];
-      }
-    }
-
-    echo '[[' . $error_no . '|' . $error_msg . ']]';
-  }
+  echo '[[-100|noActionError]]';
 ?>

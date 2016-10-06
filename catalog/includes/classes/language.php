@@ -5,7 +5,7 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2003 osCommerce
 
   Released under the GNU General Public License
 
@@ -13,17 +13,11 @@
                                    Copyright Stephane Garin <sgarin@sgarin.com> (detect_language.php v0.1 04/02/2002)
 */
 
-  use OSC\OM\Registry;
-
   class language {
     var $languages, $catalog_languages, $browser_languages, $language;
 
     function language($lng = '') {
-      $OSCOM_Db = Registry::get('Db');
-
-      $this->languages = array('af' => 'af|afrikaans',
-                               'ar' => 'ar([-_][[:alpha:]]{2})?|arabic',
-                               'be' => 'be|belarusian',
+      $this->languages = array('ar' => 'ar([-_][[:alpha:]]{2})?|arabic',
                                'bg' => 'bg|bulgarian',
                                'br' => 'pt[-_]br|brazilian portuguese',
                                'ca' => 'ca|catalan',
@@ -34,16 +28,10 @@
                                'en' => 'en([-_][[:alpha:]]{2})?|english',
                                'es' => 'es([-_][[:alpha:]]{2})?|spanish',
                                'et' => 'et|estonian',
-                               'eu' => 'eu|basque',
-                               'fa' => 'fa|farsi',
                                'fi' => 'fi|finnish',
-                               'fo' => 'fo|faeroese',
                                'fr' => 'fr([-_][[:alpha:]]{2})?|french',
-                               'ga' => 'ga|irish',
                                'gl' => 'gl|galician',
                                'he' => 'he|hebrew',
-                               'hi' => 'hi|hindi',
-                               'hr' => 'hr|croatian',
                                'hu' => 'hu|hungarian',
                                'id' => 'id|indonesian',
                                'it' => 'it|italian',
@@ -52,9 +40,6 @@
                                'ka' => 'ka|georgian',
                                'lt' => 'lt|lithuanian',
                                'lv' => 'lv|latvian',
-                               'mk' => 'mk|macedonian',
-                               'mt' => 'mt|maltese',
-                               'ms' => 'ms|malaysian',
                                'nl' => 'nl([-_][[:alpha:]]{2})?|dutch',
                                'no' => 'no|norwegian',
                                'pl' => 'pl|polish',
@@ -62,32 +47,21 @@
                                'ro' => 'ro|romanian',
                                'ru' => 'ru|russian',
                                'sk' => 'sk|slovak',
-                               'sq' => 'sq|albanian',
                                'sr' => 'sr|serbian',
                                'sv' => 'sv|swedish',
-                               'sz' => 'sz|sami',
-                               'sx' => 'sx|sutu',
                                'th' => 'th|thai',
-                               'ts' => 'ts|tsonga',
                                'tr' => 'tr|turkish',
-                               'tn' => 'tn|tswana',
                                'uk' => 'uk|ukrainian',
-                               'ur' => 'ur|urdu',
-                               'vi' => 'vi|vietnamese',
                                'tw' => 'zh[-_]tw|chinese traditional',
-                               'zh' => 'zh|chinese simplified',
-                               'ji' => 'ji|yiddish',
-                               'zu' => 'zu|zulu');
+                               'zh' => 'zh|chinese simplified');
 
       $this->catalog_languages = array();
-
-      $Qlanguages = $OSCOM_Db->query('select languages_id, name, code, image, directory from :table_languages order by sort_order');
-
-      while ($Qlanguages->fetch()) {
-        $this->catalog_languages[$Qlanguages->value('code')] = array('id' => $Qlanguages->valueInt('languages_id'),
-                                                                     'name' => $Qlanguages->value('name'),
-                                                                     'image' => $Qlanguages->value('image'),
-                                                                     'directory' => $Qlanguages->value('directory'));
+      $languages_query = tep_db_query("select languages_id, name, code, image, directory from " . TABLE_LANGUAGES . " order by sort_order");
+      while ($languages = tep_db_fetch_array($languages_query)) {
+        $this->catalog_languages[$languages['code']] = array('id' => $languages['languages_id'],
+                                                             'name' => $languages['name'],
+                                                             'image' => $languages['image'],
+                                                             'directory' => $languages['directory']);
       }
 
       $this->browser_languages = '';
@@ -105,19 +79,16 @@
     }
 
     function get_browser_language() {
-      if ( isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) && !empty($_SERVER['HTTP_ACCEPT_LANGUAGE']) ){
-        $this->browser_languages = explode(',', $_SERVER['HTTP_ACCEPT_LANGUAGE']);
-      
-        for ($i=0, $n=sizeof($this->browser_languages); $i<$n; $i++) {
-          foreach($this->languages as $key => $value) {
-            if (preg_match('/^(' . $value . ')(;q=[0-9]\\.[0-9])?$/i', $this->browser_languages[$i]) && isset($this->catalog_languages[$key])) {
-              $this->language = $this->catalog_languages[$key];
-              break 2;
-            }
+      $this->browser_languages = explode(',', getenv('HTTP_ACCEPT_LANGUAGE'));
+
+      for ($i=0, $n=sizeof($this->browser_languages); $i<$n; $i++) {
+        reset($this->languages);
+        while (list($key, $value) = each($this->languages)) {
+          if (preg_match('/^(' . $value . ')(;q=[0-9]\\.[0-9])?$/i', $this->browser_languages[$i]) && isset($this->catalog_languages[$key])) {
+            $this->language = $this->catalog_languages[$key];
+            break 2;
           }
         }
-      } else {
-        return false;
       }
     }
   }

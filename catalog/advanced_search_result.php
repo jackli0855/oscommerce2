@@ -5,25 +5,22 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2010 osCommerce
 
   Released under the GNU General Public License
 */
 
-  use OSC\OM\HTML;
-  use OSC\OM\OSCOM;
-
   require('includes/application_top.php');
 
-  require(DIR_WS_LANGUAGES . $_SESSION['language'] . '/advanced_search.php');
+  require(DIR_WS_LANGUAGES . $language . '/' . FILENAME_ADVANCED_SEARCH);
 
   $error = false;
 
-  if ( (isset($_GET['keywords']) && empty($_GET['keywords'])) &&
-       (isset($_GET['dfrom']) && (empty($_GET['dfrom']) || ($_GET['dfrom'] == DOB_FORMAT_STRING))) &&
-       (isset($_GET['dto']) && (empty($_GET['dto']) || ($_GET['dto'] == DOB_FORMAT_STRING))) &&
-       (isset($_GET['pfrom']) && !is_numeric($_GET['pfrom'])) &&
-       (isset($_GET['pto']) && !is_numeric($_GET['pto'])) ) {
+  if ( (isset($HTTP_GET_VARS['keywords']) && empty($HTTP_GET_VARS['keywords'])) &&
+       (isset($HTTP_GET_VARS['dfrom']) && (empty($HTTP_GET_VARS['dfrom']) || ($HTTP_GET_VARS['dfrom'] == DOB_FORMAT_STRING))) &&
+       (isset($HTTP_GET_VARS['dto']) && (empty($HTTP_GET_VARS['dto']) || ($HTTP_GET_VARS['dto'] == DOB_FORMAT_STRING))) &&
+       (isset($HTTP_GET_VARS['pfrom']) && !is_numeric($HTTP_GET_VARS['pfrom'])) &&
+       (isset($HTTP_GET_VARS['pto']) && !is_numeric($HTTP_GET_VARS['pto'])) ) {
     $error = true;
 
     $messageStack->add_session('search', ERROR_AT_LEAST_ONE_INPUT);
@@ -34,24 +31,24 @@
     $pto = '';
     $keywords = '';
 
-    if (isset($_GET['dfrom'])) {
-      $dfrom = (($_GET['dfrom'] == DOB_FORMAT_STRING) ? '' : $_GET['dfrom']);
+    if (isset($HTTP_GET_VARS['dfrom'])) {
+      $dfrom = (($HTTP_GET_VARS['dfrom'] == DOB_FORMAT_STRING) ? '' : $HTTP_GET_VARS['dfrom']);
     }
 
-    if (isset($_GET['dto'])) {
-      $dto = (($_GET['dto'] == DOB_FORMAT_STRING) ? '' : $_GET['dto']);
+    if (isset($HTTP_GET_VARS['dto'])) {
+      $dto = (($HTTP_GET_VARS['dto'] == DOB_FORMAT_STRING) ? '' : $HTTP_GET_VARS['dto']);
     }
 
-    if (isset($_GET['pfrom'])) {
-      $pfrom = $_GET['pfrom'];
+    if (isset($HTTP_GET_VARS['pfrom'])) {
+      $pfrom = $HTTP_GET_VARS['pfrom'];
     }
 
-    if (isset($_GET['pto'])) {
-      $pto = $_GET['pto'];
+    if (isset($HTTP_GET_VARS['pto'])) {
+      $pto = $HTTP_GET_VARS['pto'];
     }
 
-    if (isset($_GET['keywords'])) {
-      $keywords = HTML::sanitize($_GET['keywords']);
+    if (isset($HTTP_GET_VARS['keywords'])) {
+      $keywords = tep_db_prepare_input($HTTP_GET_VARS['keywords']);
     }
 
     $date_check_error = false;
@@ -109,9 +106,7 @@
     }
 
     if (tep_not_null($keywords)) {
-      $search_keywords = explode(' ', $keywords);
-
-      if (empty($search_keywords)) {
+      if (!tep_parse_search_string($keywords, $search_keywords)) {
         $error = true;
 
         $messageStack->add_session('search', ERROR_INVALID_KEYWORDS);
@@ -126,18 +121,16 @@
   }
 
   if ($error == true) {
-    OSCOM::redirect('advanced_search.php', tep_get_all_get_params(), 'NONSSL', true, false);
+    tep_redirect(tep_href_link(FILENAME_ADVANCED_SEARCH, tep_get_all_get_params(), 'NONSSL', true, false));
   }
 
-  $breadcrumb->add(NAVBAR_TITLE_1, OSCOM::link('advanced_search.php'));
-  $breadcrumb->add(NAVBAR_TITLE_2, OSCOM::link('advanced_search_result.php', tep_get_all_get_params(), 'NONSSL', true, false));
+  $breadcrumb->add(NAVBAR_TITLE_1, tep_href_link(FILENAME_ADVANCED_SEARCH));
+  $breadcrumb->add(NAVBAR_TITLE_2, tep_href_link(FILENAME_ADVANCED_SEARCH_RESULT, tep_get_all_get_params(), 'NONSSL', true, false));
 
-  require('includes/template_top.php');
+  require(DIR_WS_INCLUDES . 'template_top.php');
 ?>
 
-<div class="page-header">
-  <h1><?php echo HEADING_TITLE_2; ?></h1>
-</div>
+<h1><?php echo HEADING_TITLE_2; ?></h1>
 
 <div class="contentContainer">
 
@@ -155,244 +148,179 @@
   asort($define_list);
 
   $column_list = array();
-
-  foreach($define_list as $key => $value) {
+  reset($define_list);
+  while (list($key, $value) = each($define_list)) {
     if ($value > 0) $column_list[] = $key;
   }
 
-  $search_query = 'select SQL_CALC_FOUND_ROWS distinct';
+  $select_column_list = '';
 
   for ($i=0, $n=sizeof($column_list); $i<$n; $i++) {
     switch ($column_list[$i]) {
       case 'PRODUCT_LIST_MODEL':
-        $search_query .= ' p.products_model,';
+        $select_column_list .= 'p.products_model, ';
         break;
       case 'PRODUCT_LIST_MANUFACTURER':
-        $search_query .= ' m.manufacturers_name,';
+        $select_column_list .= 'm.manufacturers_name, ';
         break;
       case 'PRODUCT_LIST_QUANTITY':
-        $search_query .= ' p.products_quantity,';
+        $select_column_list .= 'p.products_quantity, ';
         break;
       case 'PRODUCT_LIST_IMAGE':
-        $search_query .= ' p.products_image,';
+        $select_column_list .= 'p.products_image, ';
         break;
       case 'PRODUCT_LIST_WEIGHT':
-        $search_query .= ' p.products_weight,';
+        $select_column_list .= 'p.products_weight, ';
         break;
     }
   }
 
-  $search_query .= ' m.manufacturers_id, p.products_id, SUBSTRING_INDEX(pd.products_description, " ", 20) as products_description, pd.products_name, p.products_price, p.products_tax_class_id, IF(s.status, s.specials_new_products_price, NULL) as specials_new_products_price, IF(s.status, s.specials_new_products_price, p.products_price) as final_price';
+  $select_str = "select distinct " . $select_column_list . " m.manufacturers_id, p.products_id, pd.products_name, p.products_price, p.products_tax_class_id, IF(s.status, s.specials_new_products_price, NULL) as specials_new_products_price, IF(s.status, s.specials_new_products_price, p.products_price) as final_price ";
 
   if ( (DISPLAY_PRICE_WITH_TAX == 'true') && (tep_not_null($pfrom) || tep_not_null($pto)) ) {
-    $search_query .= ', SUM(tr.tax_rate) as tax_rate';
+    $select_str .= ", SUM(tr.tax_rate) as tax_rate ";
   }
 
-  $search_query .= ' from :table_products p left join :table_manufacturers m using(manufacturers_id) left join :table_specials s on p.products_id = s.products_id';
+  $from_str = "from " . TABLE_PRODUCTS . " p left join " . TABLE_MANUFACTURERS . " m using(manufacturers_id) left join " . TABLE_SPECIALS . " s on p.products_id = s.products_id";
 
   if ( (DISPLAY_PRICE_WITH_TAX == 'true') && (tep_not_null($pfrom) || tep_not_null($pto)) ) {
-    if (!isset($_SESSION['customer_country_id'])) {
-      $_SESSION['customer_country_id'] = STORE_COUNTRY;
-      $_SESSION['customer_zone_id'] = STORE_ZONE;
+    if (!tep_session_is_registered('customer_country_id')) {
+      $customer_country_id = STORE_COUNTRY;
+      $customer_zone_id = STORE_ZONE;
     }
-    $search_query .= ' left join :table_tax_rates tr on p.products_tax_class_id = tr.tax_class_id left join :table_zones_to_geo_zones gz on tr.tax_zone_id = gz.geo_zone_id and (gz.zone_country_id is null or gz.zone_country_id = "0" or gz.zone_country_id = :zone_country_id) and (gz.zone_id is null or gz.zone_id = "0" or gz.zone_id = :zone_id)';
+    $from_str .= " left join " . TABLE_TAX_RATES . " tr on p.products_tax_class_id = tr.tax_class_id left join " . TABLE_ZONES_TO_GEO_ZONES . " gz on tr.tax_zone_id = gz.geo_zone_id and (gz.zone_country_id is null or gz.zone_country_id = '0' or gz.zone_country_id = '" . (int)$customer_country_id . "') and (gz.zone_id is null or gz.zone_id = '0' or gz.zone_id = '" . (int)$customer_zone_id . "')";
   }
 
-  $search_query .= ', :table_products_description pd, :table_categories c, :table_products_to_categories p2c where p.products_status = "1" and p.products_id = pd.products_id and pd.language_id = :language_id and p.products_id = p2c.products_id and p2c.categories_id = c.categories_id';
+  $from_str .= ", " . TABLE_PRODUCTS_DESCRIPTION . " pd, " . TABLE_CATEGORIES . " c, " . TABLE_PRODUCTS_TO_CATEGORIES . " p2c";
 
-  if (isset($_GET['categories_id']) && tep_not_null($_GET['categories_id'])) {
-    if (isset($_GET['inc_subcat']) && ($_GET['inc_subcat'] == '1')) {
+  $where_str = " where p.products_status = '1' and p.products_id = pd.products_id and pd.language_id = '" . (int)$languages_id . "' and p.products_id = p2c.products_id and p2c.categories_id = c.categories_id ";
+
+  if (isset($HTTP_GET_VARS['categories_id']) && tep_not_null($HTTP_GET_VARS['categories_id'])) {
+    if (isset($HTTP_GET_VARS['inc_subcat']) && ($HTTP_GET_VARS['inc_subcat'] == '1')) {
       $subcategories_array = array();
-      tep_get_subcategories($subcategories_array, $_GET['categories_id']);
+      tep_get_subcategories($subcategories_array, $HTTP_GET_VARS['categories_id']);
 
-      $search_query .= ' and (p2c.categories_id = :categories_id';
+      $where_str .= " and p2c.products_id = p.products_id and p2c.products_id = pd.products_id and (p2c.categories_id = '" . (int)$HTTP_GET_VARS['categories_id'] . "'";
 
       for ($i=0, $n=sizeof($subcategories_array); $i<$n; $i++ ) {
-        $search_query .= ' or p2c.categories_id = :categories_id_' . $i;
+        $where_str .= " or p2c.categories_id = '" . (int)$subcategories_array[$i] . "'";
       }
 
-      $search_query .= ')';
+      $where_str .= ")";
     } else {
-      $search_query .= ' and p2c.categories_id = :categories_id';
+      $where_str .= " and p2c.products_id = p.products_id and p2c.products_id = pd.products_id and pd.language_id = '" . (int)$languages_id . "' and p2c.categories_id = '" . (int)$HTTP_GET_VARS['categories_id'] . "'";
     }
   }
 
-  if (isset($_GET['manufacturers_id']) && tep_not_null($_GET['manufacturers_id'])) {
-    $search_query .= ' and m.manufacturers_id = :manufacturers_id';
+  if (isset($HTTP_GET_VARS['manufacturers_id']) && tep_not_null($HTTP_GET_VARS['manufacturers_id'])) {
+    $where_str .= " and m.manufacturers_id = '" . (int)$HTTP_GET_VARS['manufacturers_id'] . "'";
   }
 
   if (isset($search_keywords) && (sizeof($search_keywords) > 0)) {
-    $search_query .= ' and (';
-
+    $where_str .= " and (";
     for ($i=0, $n=sizeof($search_keywords); $i<$n; $i++ ) {
-      $search_query .= '(pd.products_name like :products_name_' . $i . ' or p.products_model like :products_model_' . $i . ' or m.manufacturers_name like :manufacturers_name_' . $i;
-
-      if (isset($_GET['search_in_description']) && ($_GET['search_in_description'] == '1')) {
-        $search_query .= ' or pd.products_description like :products_description_' . $i;
+      switch ($search_keywords[$i]) {
+        case '(':
+        case ')':
+        case 'and':
+        case 'or':
+          $where_str .= " " . $search_keywords[$i] . " ";
+          break;
+        default:
+          $keyword = tep_db_prepare_input($search_keywords[$i]);
+          $where_str .= "(pd.products_name like '%" . tep_db_input($keyword) . "%' or p.products_model like '%" . tep_db_input($keyword) . "%' or m.manufacturers_name like '%" . tep_db_input($keyword) . "%'";
+          if (isset($HTTP_GET_VARS['search_in_description']) && ($HTTP_GET_VARS['search_in_description'] == '1')) $where_str .= " or pd.products_description like '%" . tep_db_input($keyword) . "%'";
+          $where_str .= ')';
+          break;
       }
-
-      $search_query .= ') and ';
     }
-
-    $search_query = substr($search_query, 0, -5) . ')';
+    $where_str .= " )";
   }
 
   if (tep_not_null($dfrom)) {
-    $search_query .= ' and p.products_date_added >= :products_date_added_from';
+    $where_str .= " and p.products_date_added >= '" . tep_date_raw($dfrom) . "'";
   }
 
   if (tep_not_null($dto)) {
-    $search_query .= ' and p.products_date_added <= :products_date_added_to';
+    $where_str .= " and p.products_date_added <= '" . tep_date_raw($dto) . "'";
   }
 
-  if (tep_not_null($pfrom) || tep_not_null($pto)) {
-    $rate = $currencies->get_value($_SESSION['currency']);
+  if (tep_not_null($pfrom)) {
+    if ($currencies->is_set($currency)) {
+      $rate = $currencies->get_value($currency);
 
-    if (tep_not_null($pfrom)) {
       $pfrom = $pfrom / $rate;
     }
+  }
 
-    if (tep_not_null($pto)) {
+  if (tep_not_null($pto)) {
+    if (isset($rate)) {
       $pto = $pto / $rate;
     }
   }
 
   if (DISPLAY_PRICE_WITH_TAX == 'true') {
-    if ($pfrom > 0) {
-      $search_query .= ' and (IF(s.status, s.specials_new_products_price, p.products_price) * if(gz.geo_zone_id is null, 1, 1 + (tr.tax_rate / 100) ) >= :price_from)';
-    }
-
-    if ($pto > 0) {
-      $search_query .= ' and (IF(s.status, s.specials_new_products_price, p.products_price) * if(gz.geo_zone_id is null, 1, 1 + (tr.tax_rate / 100) ) <= :price_to)';
-    }
+    if ($pfrom > 0) $where_str .= " and (IF(s.status, s.specials_new_products_price, p.products_price) * if(gz.geo_zone_id is null, 1, 1 + (tr.tax_rate / 100) ) >= " . (double)$pfrom . ")";
+    if ($pto > 0) $where_str .= " and (IF(s.status, s.specials_new_products_price, p.products_price) * if(gz.geo_zone_id is null, 1, 1 + (tr.tax_rate / 100) ) <= " . (double)$pto . ")";
   } else {
-    if ($pfrom > 0) {
-      $search_query .= ' and (IF(s.status, s.specials_new_products_price, p.products_price) >= :price_from)';
-    }
-
-    if ($pto > 0) {
-      $search_query .= ' and (IF(s.status, s.specials_new_products_price, p.products_price) <= :price_to)';
-    }
+    if ($pfrom > 0) $where_str .= " and (IF(s.status, s.specials_new_products_price, p.products_price) >= " . (double)$pfrom . ")";
+    if ($pto > 0) $where_str .= " and (IF(s.status, s.specials_new_products_price, p.products_price) <= " . (double)$pto . ")";
   }
 
   if ( (DISPLAY_PRICE_WITH_TAX == 'true') && (tep_not_null($pfrom) || tep_not_null($pto)) ) {
-    $search_query .= ' group by p.products_id, tr.tax_priority';
+    $where_str .= " group by p.products_id, tr.tax_priority";
   }
 
-  if ( (!isset($_GET['sort'])) || (!preg_match('/^[1-8][ad]$/', $_GET['sort'])) || (substr($_GET['sort'], 0, 1) > sizeof($column_list)) ) {
+  if ( (!isset($HTTP_GET_VARS['sort'])) || (!preg_match('/^[1-8][ad]$/', $HTTP_GET_VARS['sort'])) || (substr($HTTP_GET_VARS['sort'], 0, 1) > sizeof($column_list)) ) {
     for ($i=0, $n=sizeof($column_list); $i<$n; $i++) {
       if ($column_list[$i] == 'PRODUCT_LIST_NAME') {
-        $_GET['sort'] = $i+1 . 'a';
-        $search_query .= ' order by pd.products_name';
+        $HTTP_GET_VARS['sort'] = $i+1 . 'a';
+        $order_str = " order by pd.products_name";
         break;
       }
     }
   } else {
-    $sort_col = substr($_GET['sort'], 0 , 1);
-    $sort_order = substr($_GET['sort'], 1);
+    $sort_col = substr($HTTP_GET_VARS['sort'], 0 , 1);
+    $sort_order = substr($HTTP_GET_VARS['sort'], 1);
 
     switch ($column_list[$sort_col-1]) {
       case 'PRODUCT_LIST_MODEL':
-        $search_query .= ' order by p.products_model ' . ($sort_order == 'd' ? 'desc' : '') . ', pd.products_name';
+        $order_str = " order by p.products_model " . ($sort_order == 'd' ? 'desc' : '') . ", pd.products_name";
         break;
       case 'PRODUCT_LIST_NAME':
-        $search_query .= ' order by pd.products_name ' . ($sort_order == 'd' ? 'desc' : '');
+        $order_str = " order by pd.products_name " . ($sort_order == 'd' ? 'desc' : '');
         break;
       case 'PRODUCT_LIST_MANUFACTURER':
-        $search_query .= ' order by m.manufacturers_name ' . ($sort_order == 'd' ? 'desc' : '') . ', pd.products_name';
+        $order_str = " order by m.manufacturers_name " . ($sort_order == 'd' ? 'desc' : '') . ", pd.products_name";
         break;
       case 'PRODUCT_LIST_QUANTITY':
-        $search_query .= ' order by p.products_quantity ' . ($sort_order == 'd' ? 'desc' : '') . ', pd.products_name';
+        $order_str = " order by p.products_quantity " . ($sort_order == 'd' ? 'desc' : '') . ", pd.products_name";
         break;
       case 'PRODUCT_LIST_IMAGE':
-        $search_query .= ' order by pd.products_name';
+        $order_str = " order by pd.products_name";
         break;
       case 'PRODUCT_LIST_WEIGHT':
-        $search_query .= ' order by p.products_weight ' . ($sort_order == 'd' ? 'desc' : '') . ', pd.products_name';
+        $order_str = " order by p.products_weight " . ($sort_order == 'd' ? 'desc' : '') . ", pd.products_name";
         break;
       case 'PRODUCT_LIST_PRICE':
-        $search_query .= ' order by final_price ' . ($sort_order == 'd' ? 'desc' : '') . ', pd.products_name';
+        $order_str = " order by final_price " . ($sort_order == 'd' ? 'desc' : '') . ", pd.products_name";
         break;
     }
   }
 
-  $search_query .= ' limit :page_set_offset, :page_set_max_results';
+  $listing_sql = $select_str . $from_str . $where_str . $order_str;
 
-  $Qlisting = $OSCOM_Db->prepare($search_query);
-
-  if ( (DISPLAY_PRICE_WITH_TAX == 'true') && (tep_not_null($pfrom) || tep_not_null($pto)) ) {
-    $Qlisting->bindInt(':zone_country_id', $_SESSION['customer_country_id']);
-    $Qlisting->bindInt(':zone_id', $_SESSION['customer_zone_id']);
-  }
-
-  $Qlisting->bindInt(':language_id', $_SESSION['languages_id']);
-
-  if (isset($_GET['categories_id']) && tep_not_null($_GET['categories_id'])) {
-    $Qlisting->bindInt(':categories_id', $_GET['categories_id']);
-
-    if (isset($_GET['inc_subcat']) && ($_GET['inc_subcat'] == '1')) {
-      for ($i=0, $n=sizeof($subcategories_array); $i<$n; $i++ ) {
-        $Qlisting->bindInt(':categories_id_' . $i, $subcategories_array[$i]);
-      }
-    }
-  }
-
-  if (isset($_GET['manufacturers_id']) && tep_not_null($_GET['manufacturers_id'])) {
-    $Qlisting->bindInt(':manufacturers_id', $_GET['manufacturers_id']);
-  }
-
-  if (isset($search_keywords) && (sizeof($search_keywords) > 0)) {
-    for ($i=0, $n=sizeof($search_keywords); $i<$n; $i++ ) {
-      $Qlisting->bindValue(':products_name_' . $i, '%' . $search_keywords[$i] . '%');
-      $Qlisting->bindValue(':products_model_' . $i, '%' . $search_keywords[$i] . '%');
-      $Qlisting->bindValue(':manufacturers_name_' . $i, '%' . $search_keywords[$i] . '%');
-
-      if (isset($_GET['search_in_description']) && ($_GET['search_in_description'] == '1')) {
-        $Qlisting->bindValue(':products_description_' . $i, '%' . $search_keywords[$i] . '%');
-      }
-    }
-  }
-
-  if (tep_not_null($dfrom)) {
-    $Qlisting->bindValue(':products_date_added_from', tep_date_raw($dfrom));
-  }
-
-  if (tep_not_null($dto)) {
-    $Qlisting->bindValue(':products_date_added_to', tep_date_raw($dto));
-  }
-
-  if (DISPLAY_PRICE_WITH_TAX == 'true') {
-    if ($pfrom > 0) {
-      $Qlisting->bindDecimal(':price_from', $pfrom);
-    }
-
-    if ($pto > 0) {
-      $Qlisting->bindDecimal(':price_to', $pto);
-    }
-  } else {
-    if ($pfrom > 0) {
-      $Qlisting->bindDecimal(':price_from', $pfrom);
-    }
-
-    if ($pto > 0) {
-      $Qlisting->bindDecimal(':price_to', $pto);
-    }
-  }
-
-  $Qlisting->setPageSet(MAX_DISPLAY_SEARCH_RESULTS);
-  $Qlisting->execute();
-
-  require('includes/modules/product_listing.php');
+  require(DIR_WS_MODULES . FILENAME_PRODUCT_LISTING);
 ?>
 
   <br />
 
-  <div>
-    <?php echo HTML::button(IMAGE_BUTTON_BACK, 'glyphicon glyphicon-chevron-left', OSCOM::link('advanced_search.php', tep_get_all_get_params(array('sort', 'page')), 'NONSSL', true, false)); ?>
+  <div class="buttonSet">
+    <?php echo tep_draw_button(IMAGE_BUTTON_BACK, 'triangle-1-w', tep_href_link(FILENAME_ADVANCED_SEARCH, tep_get_all_get_params(array('sort', 'page')), 'NONSSL', true, false)); ?>
   </div>
 </div>
 
 <?php
-  require('includes/template_bottom.php');
-  require('includes/application_bottom.php');
+  require(DIR_WS_INCLUDES . 'template_bottom.php');
+  require(DIR_WS_INCLUDES . 'application_bottom.php');
 ?>

@@ -5,32 +5,29 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2013 osCommerce
 
   Released under the GNU General Public License
 */
 
-  use OSC\OM\HTML;
-  use OSC\OM\OSCOM;
-
   require('includes/application_top.php');
 
-  if (!isset($_SESSION['customer_id'])) {
-    $_SESSION['navigation']->set_snapshot();
-    OSCOM::redirect('index.php', 'Account&LogIn', 'SSL');
+  if (!tep_session_is_registered('customer_id')) {
+    $navigation->set_snapshot();
+    tep_redirect(tep_href_link(FILENAME_LOGIN, '', 'SSL'));
   }
 
 // needs to be included earlier to set the success message in the messageStack
-  require(DIR_WS_LANGUAGES . $_SESSION['language'] . '/account_edit.php');
+  require(DIR_WS_LANGUAGES . $language . '/' . FILENAME_ACCOUNT_EDIT);
 
-  if (isset($_POST['action']) && ($_POST['action'] == 'process') && isset($_POST['formid']) && ($_POST['formid'] == $_SESSION['sessiontoken'])) {
-    if (ACCOUNT_GENDER == 'true') $gender = HTML::sanitize($_POST['gender']);
-    $firstname = HTML::sanitize($_POST['firstname']);
-    $lastname = HTML::sanitize($_POST['lastname']);
-    if (ACCOUNT_DOB == 'true') $dob = HTML::sanitize($_POST['dob']);
-    $email_address = HTML::sanitize($_POST['email_address']);
-    $telephone = HTML::sanitize($_POST['telephone']);
-    $fax = HTML::sanitize($_POST['fax']);
+  if (isset($HTTP_POST_VARS['action']) && ($HTTP_POST_VARS['action'] == 'process') && isset($HTTP_POST_VARS['formid']) && ($HTTP_POST_VARS['formid'] == $sessiontoken)) {
+    if (ACCOUNT_GENDER == 'true') $gender = tep_db_prepare_input($HTTP_POST_VARS['gender']);
+    $firstname = tep_db_prepare_input($HTTP_POST_VARS['firstname']);
+    $lastname = tep_db_prepare_input($HTTP_POST_VARS['lastname']);
+    if (ACCOUNT_DOB == 'true') $dob = tep_db_prepare_input($HTTP_POST_VARS['dob']);
+    $email_address = tep_db_prepare_input($HTTP_POST_VARS['email_address']);
+    $telephone = tep_db_prepare_input($HTTP_POST_VARS['telephone']);
+    $fax = tep_db_prepare_input($HTTP_POST_VARS['fax']);
 
     $error = false;
 
@@ -62,18 +59,21 @@
       }
     }
 
+    if (strlen($email_address) < ENTRY_EMAIL_ADDRESS_MIN_LENGTH) {
+      $error = true;
+
+      $messageStack->add('account_edit', ENTRY_EMAIL_ADDRESS_ERROR);
+    }
+
     if (!tep_validate_email($email_address)) {
       $error = true;
 
       $messageStack->add('account_edit', ENTRY_EMAIL_ADDRESS_CHECK_ERROR);
     }
 
-    $Qcheck = $OSCOM_Db->prepare('select customers_id from :table_customers where customers_email_address = :customers_email_address and customers_id != :customers_id limit 1');
-    $Qcheck->bindValue(':customers_email_address', $email_address);
-    $Qcheck->bindInt(':customers_id', $_SESSION['customer_id']);
-    $Qcheck->execute();
-
-    if ($Qcheck->fetch() !== false) {
+    $check_email_query = tep_db_query("select count(*) as total from " . TABLE_CUSTOMERS . " where customers_email_address = '" . tep_db_input($email_address) . "' and customers_id != '" . (int)$customer_id . "'");
+    $check_email = tep_db_fetch_array($check_email_query);
+    if ($check_email['total'] > 0) {
       $error = true;
 
       $messageStack->add('account_edit', ENTRY_EMAIL_ADDRESS_ERROR_EXISTS);
@@ -95,36 +95,35 @@
       if (ACCOUNT_GENDER == 'true') $sql_data_array['customers_gender'] = $gender;
       if (ACCOUNT_DOB == 'true') $sql_data_array['customers_dob'] = tep_date_raw($dob);
 
-      $OSCOM_Db->save('customers', $sql_data_array, ['customers_id' => (int)$_SESSION['customer_id']]);
-      $OSCOM_Db->save('customers_info', ['customers_info_date_account_last_modified' => 'now()'], ['customers_info_id' => (int)$_SESSION['customer_id']]);
+      tep_db_perform(TABLE_CUSTOMERS, $sql_data_array, 'update', "customers_id = '" . (int)$customer_id . "'");
 
-      $sql_data_array = ['entry_firstname' => $firstname,
-                         'entry_lastname' => $lastname];
+      tep_db_query("update " . TABLE_CUSTOMERS_INFO . " set customers_info_date_account_last_modified = now() where customers_info_id = '" . (int)$customer_id . "'");
 
-      $OSCOM_Db->save('address_book', $sql_data_array, ['customers_id' => (int)$_SESSION['customer_id'], 'address_book_id' => (int)$_SESSION['customer_default_address_id']]);
+      $sql_data_array = array('entry_firstname' => $firstname,
+                              'entry_lastname' => $lastname);
+
+      tep_db_perform(TABLE_ADDRESS_BOOK, $sql_data_array, 'update', "customers_id = '" . (int)$customer_id . "' and address_book_id = '" . (int)$customer_default_address_id . "'");
 
 // reset the session variables
-      $_SESSION['customer_first_name'] = $firstname;
+      $customer_first_name = $firstname;
 
       $messageStack->add_session('account', SUCCESS_ACCOUNT_UPDATED, 'success');
 
-      OSCOM::redirect('account.php', '', 'SSL');
+      tep_redirect(tep_href_link(FILENAME_ACCOUNT, '', 'SSL'));
     }
   }
 
-  $Qaccount = $OSCOM_Db->prepare('select * from :table_customers where customers_id = :customers_id');
-  $Qaccount->bindInt(':customers_id', $_SESSION['customer_id']);
-  $Qaccount->execute();
+  $account_query = tep_db_query("select customers_gender, customers_firstname, customers_lastname, customers_dob, customers_email_address, customers_telephone, customers_fax from " . TABLE_CUSTOMERS . " where customers_id = '" . (int)$customer_id . "'");
+  $account = tep_db_fetch_array($account_query);
 
-  $breadcrumb->add(NAVBAR_TITLE_1, OSCOM::link('account.php', '', 'SSL'));
-  $breadcrumb->add(NAVBAR_TITLE_2, OSCOM::link('account_edit.php', '', 'SSL'));
+  $breadcrumb->add(NAVBAR_TITLE_1, tep_href_link(FILENAME_ACCOUNT, '', 'SSL'));
+  $breadcrumb->add(NAVBAR_TITLE_2, tep_href_link(FILENAME_ACCOUNT_EDIT, '', 'SSL'));
 
-  require('includes/template_top.php');
+  require(DIR_WS_INCLUDES . 'template_top.php');
+  require('includes/form_check.js.php');
 ?>
 
-<div class="page-header">
-  <h1><?php echo HEADING_TITLE; ?></h1>
-</div>
+<h1><?php echo HEADING_TITLE; ?></h1>
 
 <?php
   if ($messageStack->size('account_edit') > 0) {
@@ -132,104 +131,86 @@
   }
 ?>
 
-<?php echo HTML::form('account_edit', OSCOM::link('account_edit.php', '', 'SSL'), 'post', 'class="form-horizontal" role="form"', ['tokenize' => true, 'action' => 'process']); ?>
+<?php echo tep_draw_form('account_edit', tep_href_link(FILENAME_ACCOUNT_EDIT, '', 'SSL'), 'post', 'onsubmit="return check_form(account_edit);"', true) . tep_draw_hidden_field('action', 'process'); ?>
 
 <div class="contentContainer">
-  <div class="inputRequirement text-right"><?php echo FORM_REQUIRED_INFORMATION; ?></div>
+  <div>
+    <div class="inputRequirement" style="float: right;"><?php echo FORM_REQUIRED_INFORMATION; ?></div>
+
+    <h2><?php echo MY_ACCOUNT_TITLE; ?></h2>
+  </div>
+
+  <div class="contentText">
+    <table border="0" cellspacing="2" cellpadding="2" width="100%">
 
 <?php
   if (ACCOUNT_GENDER == 'true') {
     if (isset($gender)) {
       $male = ($gender == 'm') ? true : false;
     } else {
-      $male = ($Qaccount->value('customers_gender') == 'm') ? true : false;
+      $male = ($account['customers_gender'] == 'm') ? true : false;
     }
     $female = !$male;
 ?>
 
-      <div class="form-group has-feedback">
-        <label class="control-label col-sm-3"><?php echo ENTRY_GENDER; ?></label>
-        <div class="col-sm-9">
-          <label class="radio-inline">
-            <?php echo HTML::radioField('gender', 'm', $male, 'required aria-required="true"') . ' ' . MALE; ?>
-          </label>
-          <label class="radio-inline">
-            <?php echo HTML::radioField('gender', 'f', $female) . ' ' . FEMALE; ?>
-          </label>
-          <?php echo FORM_REQUIRED_INPUT; ?>
-          <?php if (tep_not_null(ENTRY_GENDER_TEXT)) echo '<span class="help-block">' . ENTRY_GENDER_TEXT . '</span>'; ?>
-        </div>
-      </div>
+      <tr>
+        <td class="fieldKey"><?php echo ENTRY_GENDER; ?></td>
+        <td class="fieldValue"><?php echo tep_draw_radio_field('gender', 'm', $male) . '&nbsp;&nbsp;' . MALE . '&nbsp;&nbsp;' . tep_draw_radio_field('gender', 'f', $female) . '&nbsp;&nbsp;' . FEMALE . '&nbsp;' . (tep_not_null(ENTRY_GENDER_TEXT) ? '<span class="inputRequirement">' . ENTRY_GENDER_TEXT . '</span>': ''); ?></td>
+      </tr>
 
 <?php
   }
 ?>
 
-      <div class="form-group has-feedback">
-        <label for="inputFirstName" class="control-label col-sm-3"><?php echo ENTRY_FIRST_NAME; ?></label>
-        <div class="col-sm-9">
-          <?php echo HTML::inputField('firstname', $Qaccount->value('customers_firstname'), 'minlength="' . ENTRY_FIRST_NAME_MIN_LENGTH . '" required aria-required="true" id="inputFirstName" placeholder="' . ENTRY_FIRST_NAME_TEXT . '"'); ?>
-          <?php echo FORM_REQUIRED_INPUT; ?>
-        </div>
-      </div>
-      <div class="form-group has-feedback">
-        <label for="inputLastName" class="control-label col-sm-3"><?php echo ENTRY_LAST_NAME; ?></label>
-        <div class="col-sm-9">
-          <?php echo HTML::inputField('lastname', $Qaccount->value('customers_lastname'), 'minlength="' . ENTRY_LAST_NAME_MIN_LENGTH . '" required aria-required="true" id="inputLastName" placeholder="' . ENTRY_LAST_NAME_TEXT . '"'); ?>
-          <?php echo FORM_REQUIRED_INPUT; ?>
-        </div>
-      </div>
+      <tr>
+        <td class="fieldKey"><?php echo ENTRY_FIRST_NAME; ?></td>
+        <td class="fieldValue"><?php echo tep_draw_input_field('firstname', $account['customers_firstname']) . '&nbsp;' . (tep_not_null(ENTRY_FIRST_NAME_TEXT) ? '<span class="inputRequirement">' . ENTRY_FIRST_NAME_TEXT . '</span>': ''); ?></td>
+      </tr>
+      <tr>
+        <td class="fieldKey"><?php echo ENTRY_LAST_NAME; ?></td>
+        <td class="fieldValue"><?php echo tep_draw_input_field('lastname', $account['customers_lastname']) . '&nbsp;' . (tep_not_null(ENTRY_LAST_NAME_TEXT) ? '<span class="inputRequirement">' . ENTRY_LAST_NAME_TEXT . '</span>': ''); ?></td>
+      </tr>
 
 <?php
   if (ACCOUNT_DOB == 'true') {
 ?>
 
-      <div class="form-group has-feedback">
-        <label for="inputName" class="control-label col-sm-3"><?php echo ENTRY_DATE_OF_BIRTH; ?></label>
-        <div class="col-sm-9">
-          <?php echo HTML::inputField('dob', tep_date_short($Qaccount->value('customers_dob')), 'minlength="' . ENTRY_DOB_MIN_LENGTH . '" required aria-required="true" id="dob" placeholder="' . ENTRY_DATE_OF_BIRTH_TEXT . '"'); ?>
-          <?php echo FORM_REQUIRED_INPUT; ?>
-        </div>
-      </div>
+      <tr>
+        <td class="fieldKey"><?php echo ENTRY_DATE_OF_BIRTH; ?></td>
+        <td class="fieldValue"><?php echo tep_draw_input_field('dob', tep_date_short($account['customers_dob']), 'id="dob"') . '&nbsp;' . (tep_not_null(ENTRY_DATE_OF_BIRTH_TEXT) ? '<span class="inputRequirement">' . ENTRY_DATE_OF_BIRTH_TEXT . '</span>': ''); ?><script type="text/javascript">$('#dob').datepicker({dateFormat: '<?php echo JQUERY_DATEPICKER_FORMAT; ?>', changeMonth: true, changeYear: true, yearRange: '-100:+0'});</script></td>
+      </tr>
 
 <?php
   }
 ?>
 
-    <div class="form-group has-feedback">
-      <label for="inputEmail" class="control-label col-sm-3"><?php echo ENTRY_EMAIL_ADDRESS; ?></label>
-      <div class="col-sm-9">
-        <?php echo HTML::inputField('email_address', $Qaccount->value('customers_email_address'), 'required aria-required="true" id="inputEmail" placeholder="' . ENTRY_EMAIL_ADDRESS_TEXT . '"', 'email'); ?>
-        <?php echo FORM_REQUIRED_INPUT; ?>
-      </div>
-    </div>
-    <div class="form-group has-feedback">
-      <label for="inputTelephone" class="control-label col-sm-3"><?php echo ENTRY_TELEPHONE_NUMBER; ?></label>
-      <div class="col-sm-9">
-        <?php echo HTML::inputField('telephone', $Qaccount->value('customers_telephone'), 'minlength="' . ENTRY_TELEPHONE_MIN_LENGTH . '" required aria-required="true" id="inputTelephone" placeholder="' . ENTRY_TELEPHONE_NUMBER_TEXT . '"', 'tel'); ?>
-        <?php echo FORM_REQUIRED_INPUT; ?>
-      </div>
-    </div>
-    <div class="form-group">
-      <label for="inputFax" class="control-label col-sm-3"><?php echo ENTRY_FAX_NUMBER; ?></label>
-      <div class="col-sm-9">
-        <?php echo HTML::inputField('fax', $Qaccount->value('customers_fax'), 'id="inputFax" placeholder="' . ENTRY_FAX_NUMBER_TEXT . '"'); ?>
-      </div>
-    </div>
-
+      <tr>
+        <td class="fieldKey"><?php echo ENTRY_EMAIL_ADDRESS; ?></td>
+        <td class="fieldValue"><?php echo tep_draw_input_field('email_address', $account['customers_email_address']) . '&nbsp;' . (tep_not_null(ENTRY_EMAIL_ADDRESS_TEXT) ? '<span class="inputRequirement">' . ENTRY_EMAIL_ADDRESS_TEXT . '</span>': ''); ?></td>
+      </tr>
+      <tr>
+        <td class="fieldKey"><?php echo ENTRY_TELEPHONE_NUMBER; ?></td>
+        <td class="fieldValue"><?php echo tep_draw_input_field('telephone', $account['customers_telephone']) . '&nbsp;' . (tep_not_null(ENTRY_TELEPHONE_NUMBER_TEXT) ? '<span class="inputRequirement">' . ENTRY_TELEPHONE_NUMBER_TEXT . '</span>': ''); ?></td>
+      </tr>
+      <tr>
+        <td class="fieldKey"><?php echo ENTRY_FAX_NUMBER; ?></td>
+        <td class="fieldValue"><?php echo tep_draw_input_field('fax', $account['customers_fax']) . '&nbsp;' . (tep_not_null(ENTRY_FAX_NUMBER_TEXT) ? '<span class="inputRequirement">' . ENTRY_FAX_NUMBER_TEXT . '</span>': ''); ?></td>
+      </tr>
+    </table>
 
     <br />
 
-    <div class="row">
-      <div class="col-xs-6 text-right pull-right"><?php echo HTML::button(IMAGE_BUTTON_CONTINUE, 'glyphicon glyphicon-chevron-right', null, 'primary', null, 'btn-success'); ?></div>
-      <div class="col-xs-6"><?php echo HTML::button(IMAGE_BUTTON_BACK, 'glyphicon glyphicon-chevron-left', OSCOM::link('account.php', '', 'SSL')); ?></div>
-    </div>
+    <div class="buttonSet">
+      <span class="buttonAction"><?php echo tep_draw_button(IMAGE_BUTTON_CONTINUE, 'triangle-1-e', null, 'primary'); ?></span>
 
+      <?php echo tep_draw_button(IMAGE_BUTTON_BACK, 'triangle-1-w', tep_href_link(FILENAME_ACCOUNT, '', 'SSL')); ?>
+    </div>
   </div>
+</div>
 
 </form>
 
 <?php
-  require('includes/template_bottom.php');
-  require('includes/application_bottom.php');
+  require(DIR_WS_INCLUDES . 'template_bottom.php');
+  require(DIR_WS_INCLUDES . 'application_bottom.php');
 ?>

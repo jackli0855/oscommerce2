@@ -5,63 +5,60 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2014 osCommerce
 
   Released under the GNU General Public License
 */
 
-  use OSC\OM\HTML;
-  use OSC\OM\OSCOM;
-
   require('includes/application_top.php');
 
 // if the customer is not logged on, redirect them to the shopping cart page
-  if (!isset($_SESSION['customer_id'])) {
-    OSCOM::redirect('shopping_cart.php');
+  if (!tep_session_is_registered('customer_id')) {
+    tep_redirect(tep_href_link(FILENAME_SHOPPING_CART));
   }
 
-  $Qorders = $OSCOM_Db->prepare('select orders_id from :table_orders where customers_id = :customers_id order by date_purchased desc limit 1');
-  $Qorders->bindInt(':customers_id', $_SESSION['customer_id']);
-  $Qorders->execute();
+  $orders_query = tep_db_query("select orders_id from " . TABLE_ORDERS . " where customers_id = '" . (int)$customer_id . "' order by date_purchased desc limit 1");
 
 // redirect to shopping cart page if no orders exist
-  if ($Qorders->fetch() === false) {
-    OSCOM::redirect('shopping_cart.php');
+  if ( !tep_db_num_rows($orders_query) ) {
+    tep_redirect(tep_href_link(FILENAME_SHOPPING_CART));
   }
 
-  $orders = $Qorders->toArray(); // TODO replace $orders used in template content modules with $Qorders
+  $orders = tep_db_fetch_array($orders_query);
 
   $order_id = $orders['orders_id'];
 
   $page_content = $oscTemplate->getContent('checkout_success');
 
-  if ( isset($_GET['action']) && ($_GET['action'] == 'update') ) {
-    OSCOM::redirect('index.php');
+  if ( isset($HTTP_GET_VARS['action']) && ($HTTP_GET_VARS['action'] == 'update') ) {
+    tep_redirect(tep_href_link(FILENAME_DEFAULT));
   }
 
-  require(DIR_WS_LANGUAGES . $_SESSION['language'] . '/checkout_success.php');
+  require(DIR_WS_LANGUAGES . $language . '/' . FILENAME_CHECKOUT_SUCCESS);
 
   $breadcrumb->add(NAVBAR_TITLE_1);
   $breadcrumb->add(NAVBAR_TITLE_2);
 
-  require('includes/template_top.php');
+  require(DIR_WS_INCLUDES . 'template_top.php');
 ?>
 
-<div class="page-header">
-  <h1><?php echo HEADING_TITLE; ?></h1>
-</div>
+<h1><?php echo HEADING_TITLE; ?></h1>
 
-<?php echo HTML::form('order', OSCOM::link('checkout_success.php', 'action=update', 'SSL'), 'post', 'class="form-horizontal" role="form"'); ?>
+<?php echo tep_draw_form('order', tep_href_link(FILENAME_CHECKOUT_SUCCESS, 'action=update', 'SSL')); ?>
 
 <div class="contentContainer">
   <?php echo $page_content; ?>
 </div>
 
-<div><?php echo HTML::button(IMAGE_BUTTON_CONTINUE, 'glyphicon glyphicon-chevron-right', null, 'primary', null, 'btn-success btn-block'); ?></div>
+<div class="contentContainer">
+  <div class="buttonSet">
+    <span class="buttonAction"><?php echo tep_draw_button(IMAGE_BUTTON_CONTINUE, 'triangle-1-e', null, 'primary'); ?></span>
+  </div>
+</div>
 
 </form>
 
 <?php
-  require('includes/template_bottom.php');
-  require('includes/application_bottom.php');
+  require(DIR_WS_INCLUDES . 'template_bottom.php');
+  require(DIR_WS_INCLUDES . 'application_bottom.php');
 ?>

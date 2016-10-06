@@ -5,12 +5,10 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2010 osCommerce
 
   Released under the GNU General Public License
 */
-
-  use OSC\OM\Registry;
 
   class ht_manufacturer_title {
     var $code = 'ht_manufacturer_title';
@@ -31,16 +29,21 @@
     }
 
     function execute() {
-      global $PHP_SELF, $oscTemplate;
+      global $PHP_SELF, $HTTP_GET_VARS, $oscTemplate, $manufacturers, $languages_id;
 
-      $OSCOM_Db = Registry::get('Db');
+      if (basename($PHP_SELF) == FILENAME_DEFAULT) {
+        if (isset($HTTP_GET_VARS['manufacturers_id']) && is_numeric($HTTP_GET_VARS['manufacturers_id'])) {
+// $manufacturers is set in application_top.php to add the manufacturer to the breadcrumb
+          if (isset($manufacturers) && (sizeof($manufacturers) == 1) && isset($manufacturers['manufacturers_name'])) {
+            $oscTemplate->setTitle($manufacturers['manufacturers_name'] . ', ' . $oscTemplate->getTitle());
+          } else {
+// $manufacturers is not set so a database query is needed
+            $manufacturers_query = tep_db_query("select manufacturers_name from " . TABLE_MANUFACTURERS . " where manufacturers_id = '" . (int)$HTTP_GET_VARS['manufacturers_id'] . "'");
+            if (tep_db_num_rows($manufacturers_query)) {
+              $manufacturers = tep_db_fetch_array($manufacturers_query);
 
-      if (basename($PHP_SELF) == 'index.php') {
-        if (isset($_GET['manufacturers_id']) && is_numeric($_GET['manufacturers_id'])) {
-          $Qmanufacturer = $OSCOM_Db->get('manufacturers', 'manufacturers_name', ['manufacturers_id' => $_GET['manufacturers_id']]);
-
-          if ($Qmanufacturer->fetch() !== false) {
-            $oscTemplate->setTitle($Qmanufacturer->value('manufacturers_name') . ', ' . $oscTemplate->getTitle());
+              $oscTemplate->setTitle($manufacturers['manufacturers_name'] . ', ' . $oscTemplate->getTitle());
+            }
           }
         }
       }
@@ -55,32 +58,12 @@
     }
 
     function install() {
-      $OSCOM_Db = Registry::get('Db');
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Enable Manufacturer Title Module',
-        'configuration_key' => 'MODULE_HEADER_TAGS_MANUFACTURER_TITLE_STATUS',
-        'configuration_value' => 'True',
-        'configuration_description' => 'Do you want to allow manufacturer titles to be added to the page title?',
-        'configuration_group_id' => '6',
-        'sort_order' => '1',
-        'set_function' => 'tep_cfg_select_option(array(\'True\', \'False\'), ',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Sort Order',
-        'configuration_key' => 'MODULE_HEADER_TAGS_MANUFACTURER_TITLE_SORT_ORDER',
-        'configuration_value' => '0',
-        'configuration_description' => 'Sort order of display. Lowest is displayed first.',
-        'configuration_group_id' => '6',
-        'sort_order' => '0',
-        'date_added' => 'now()'
-      ]);
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable Manufacturer Title Module', 'MODULE_HEADER_TAGS_MANUFACTURER_TITLE_STATUS', 'True', 'Do you want to allow manufacturer titles to be added to the page title?', '6', '1', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Sort Order', 'MODULE_HEADER_TAGS_MANUFACTURER_TITLE_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', '6', '0', now())");
     }
 
     function remove() {
-      return Registry::get('Db')->exec('delete from :table_configuration where configuration_key in ("' . implode('", "', $this->keys()) . '")');
+      tep_db_query("delete from " . TABLE_CONFIGURATION . " where configuration_key in ('" . implode("', '", $this->keys()) . "')");
     }
 
     function keys() {

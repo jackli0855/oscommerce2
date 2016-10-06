@@ -71,7 +71,7 @@
         if ($parameters != '') {
           if (substr($parameters, -1) == '&') $parameters = substr($parameters, 0, -1);
           $pairs = explode('&', $parameters);
-          foreach ( $pairs as $pair ) {
+          while (list(, $pair) = each($pairs)) {
             list($key,$value) = explode('=', $pair);
             $display_links .= tep_draw_hidden_field(rawurldecode($key), rawurldecode($value));
           }

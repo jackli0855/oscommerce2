@@ -1,6 +1,4 @@
 <?php
-use OSC\OM\Registry;
-
 class mc360 {
     var $system = "osc";
     var $version = "1.1";
@@ -28,8 +26,6 @@ class mc360 {
     }
 
     function validate_cfg(){
-        $OSCOM_Db = Registry::get('Db');
-
         $this->valid_cfg = false;
         if (empty($this->apikey)){
             $this->complain('You have not entered your API key. Please read the installation instructions.');
@@ -45,11 +41,11 @@ class mc360 {
                 return;
             } else {
                 $this->key_valid = true;
-                $OSCOM_Db->save('configuration', ['configuration_value' => 'true'], ['configuration_key' => 'MODULE_HEADER_TAGS_MAILCHIMP_360_KEY_VALID']);
+                tep_db_query("update " . TABLE_CONFIGURATION . " set configuration_value = 'true' where configuration_key = 'MODULE_HEADER_TAGS_MAILCHIMP_360_KEY_VALID'");
                 
                 if (empty($this->store_id)){
                     $this->store_id = md5(uniqid(rand(), true));
-                    $OSCOM_Db->save('configuration', ['configuration_value' => $this->store_id], ['configuration_key' => 'MODULE_HEADER_TAGS_MAILCHIMP_360_STORE_ID']);
+                    tep_db_query("update " . TABLE_CONFIGURATION . " set configuration_value = '" . $this->store_id . "' where configuration_key = 'MODULE_HEADER_TAGS_MAILCHIMP_360_STORE_ID'");
                 }
             }
         }
@@ -81,8 +77,6 @@ class mc360 {
 
         global $order, $insert_id;
 
-        $OSCOM_Db = Registry::get('Db');
-
         $orderId = $insert_id; // just to make it obvious.
 
         $debug_email = '';
@@ -105,28 +99,31 @@ class mc360 {
                             date('Y-m-d H:i:s') . ' cid =' . $_COOKIE['mailchimp_campaign_id'] . "\n";
         }
 
-        $Qorder = $OSCOM_Db->get('orders', 'orders_id', ['customers_id' => $_SESSION['customer_id']], 'date_purchased desc', 1);
+        $customer_id = $_SESSION['customer_id'];
+
+        $orders_query = tep_db_query("select orders_id from " . TABLE_ORDERS . " where customers_id = '" . (int)$customer_id . "' order by date_purchased desc limit 1");
+        $orders = tep_db_fetch_array($orders_query);
 
         $totals_array = array();
-        $Qtotals = $OSCOM_Db->get('orders_total', ['value', 'class'], ['orders_id' => $Qorder->valueInt('orders_id')]);
-        while ($Qtotals->fetch()) {
-            $totals_array[$Qtotals->value('class')] = $Qtotals->value('value');
+        $totals_query = tep_db_query("select value, class from " . TABLE_ORDERS_TOTAL . " where orders_id = " . (int)$orders['orders_id']);
+        while ($totals = tep_db_fetch_array($totals_query)) {
+            $totals_array[$totals['class']] = $totals['value'];
         }
         
         $products_array = array();
-        $Qproducts = $OSCOM_Db->get('orders_products', ['products_id', 'products_model', 'products_name', 'products_tax', 'products_quantity', 'final_price'], ['orders_id' => $Qorder->valueInt('orders_id')]);
-        while ($Qproducts->fetch()) {
-            $products_array[] = array('id' => $Qproducts->valueInt('products_id'),
-                                    'name' => $Qproducts->value('products_name'),
-                                    'model' => $Qproducts->value('products_model'),
-                                    'qty' => $Qproducts->value('products_quantity'),
-                                    'final_price' => $Qproducts->value('final_price'),
+        $products_query = tep_db_query("select products_id, products_model, products_name, products_tax, products_quantity, final_price from " . TABLE_ORDERS_PRODUCTS . " where orders_id = " . (int)$orders['orders_id']);
+        while ($products = tep_db_fetch_array($products_query)) {
+            $products_array[] = array('id' => $products['products_id'],
+                                    'name' => $products['products_name'],
+                                    'model' => $products['products_model'],
+                                    'qty' => $products['products_quantity'],
+                                    'final_price' => $products['final_price'],
                                     );
-            $totals_array['ot_tax'] += $Qproducts->value('product_tax');
+            $totals_array['ot_tax'] += $products['product_tax'];
         }
 
         $mcorder = array(
-                'id' => $Qorder->valueInt('orders_id'),
+                'id' => $orders['orders_id'],
                 'total'=>$totals_array['ot_total'],
                 'shipping'=>$totals_array['ot_shipping'],
                 'tax'  =>$totals_array['ot_tax'],
@@ -148,25 +145,23 @@ class mc360 {
             $item['cost'] = $product['final_price'];
 
             //All this to get a silly category name from here
-            $Qcat = $OSCOM_Db->get('products_to_categories', 'categories_id', ['products_id' => $product['id']], null, 1);
-
-            $cat_id = $Qcat->valueInt('categories_id');
+            $cat_qry = tep_db_query("select categories_id from " . TABLE_PRODUCTS_TO_CATEGORIES . " where products_id = " . (int)$product['id']." limit 1");
+            $cats = tep_db_fetch_array($cat_qry);
+            $cat_id = $cats['categories_id'];
             
             $item['category_id'] = $cat_id;
             $cat_name == '';
             $continue = true; 
             while($continue){            
             //now recurse up the categories tree...
-                $Qcat = $OSCOM_Db->prepare('select c.categories_id, c.parent_id, cd.categories_name from :table_categories c inner join :table_categories_description cd on c.categories_id = cd.categories_id where c.categories_id = :categories_id');
-                $Qcat->bindInt(':categories_id', $cat_id);
-                $Qcat->execute();
-
+                $cat_qry = tep_db_query("select c.categories_id, c.parent_id, cd.categories_name from  " . TABLE_CATEGORIES . " c inner join " . TABLE_CATEGORIES_DESCRIPTION . " cd on c.categories_id = cd.categories_id where c.categories_id =".$cat_id);
+                $cats = tep_db_fetch_array($cat_qry);
                 if ($cat_name == ''){
-                    $cat_name = $Qcat->value('categories_name');
+                    $cat_name = $cats['categories_name'];
                 } else {
-                    $cat_name = $Qcat->value('categories_name') .' - '.$cat_name;
+                    $cat_name = $cats['categories_name'] .' - '.$cat_name;
                 }
-                $cat_id = $Qcat->valueInt('parent_id');
+                $cat_id = $cats['parent_id'];
                 if ($cat_id==0){
                     $continue = false;
                 }

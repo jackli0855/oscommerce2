@@ -5,13 +5,10 @@
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2015 osCommerce
+  Copyright (c) 2014 osCommerce
 
   Released under the GNU General Public License
 */
-
-  use OSC\OM\OSCOM;
-  use OSC\OM\Registry;
 
   class cm_account_sage_pay_cards {
     var $code;
@@ -22,6 +19,8 @@
     var $enabled = false;
 
     function cm_account_sage_pay_cards() {
+      global $language;
+
       $this->code = get_class($this);
       $this->group = basename(dirname(__FILE__));
 
@@ -39,7 +38,7 @@
 
       if ( defined('MODULE_PAYMENT_INSTALLED') && tep_not_null(MODULE_PAYMENT_INSTALLED) && in_array('sage_pay_direct.php', explode(';', MODULE_PAYMENT_INSTALLED)) ) {
         if ( !class_exists('sage_pay_direct') ) {
-          include(DIR_FS_CATALOG . 'includes/languages/' . $_SESSION['language'] . '/modules/payment/sage_pay_direct.php');
+          include(DIR_FS_CATALOG . 'includes/languages/' . $language . '/modules/payment/sage_pay_direct.php');
           include(DIR_FS_CATALOG . 'includes/modules/payment/sage_pay_direct.php');
         }
 
@@ -66,7 +65,7 @@
       global $oscTemplate;
 
       $oscTemplate->_data['account']['account']['links']['sage_pay_cards'] = array('title' => $this->public_title,
-                                                                                   'link' => OSCOM::link('ext/modules/content/account/sage_pay/cards.php', '', 'SSL'),
+                                                                                   'link' => tep_href_link('ext/modules/content/account/sage_pay/cards.php', '', 'SSL'),
                                                                                    'icon' => 'newwin');
     }
 
@@ -79,32 +78,12 @@
     }
 
     function install() {
-      $OSCOM_Db = Registry::get('Db');
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Enable Sage Pay Card Management',
-        'configuration_key' => 'MODULE_CONTENT_ACCOUNT_SAGE_PAY_CARDS_STATUS',
-        'configuration_value' => 'True',
-        'configuration_description' => 'Do you want to enable the Sage Pay Card Management module?',
-        'configuration_group_id' => '6',
-        'sort_order' => '1',
-        'set_function' => 'tep_cfg_select_option(array(\'True\', \'False\'), ',
-        'date_added' => 'now()'
-      ]);
-
-      $OSCOM_Db->save('configuration', [
-        'configuration_title' => 'Sort Order',
-        'configuration_key' => 'MODULE_CONTENT_ACCOUNT_SAGE_PAY_CARDS_SORT_ORDER',
-        'configuration_value' => '0',
-        'configuration_description' => 'Sort order of display. Lowest is displayed first.',
-        'configuration_group_id' => '6',
-        'sort_order' => '0',
-        'date_added' => 'now()'
-      ]);
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable Sage Pay Card Management', 'MODULE_CONTENT_ACCOUNT_SAGE_PAY_CARDS_STATUS', 'True', 'Do you want to enable the Sage Pay Card Management module?', '6', '1', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Sort Order', 'MODULE_CONTENT_ACCOUNT_SAGE_PAY_CARDS_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', '6', '0', now())");
     }
 
     function remove() {
-      return Registry::get('Db')->exec('delete from :table_configuration where configuration_key in ("' . implode('", "', $this->keys()) . '")');
+      tep_db_query("delete from " . TABLE_CONFIGURATION . " where configuration_key in ('" . implode("', '", $this->keys()) . "')");
     }
 
     function keys() {
