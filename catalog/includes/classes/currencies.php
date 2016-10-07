@@ -72,5 +72,13 @@
     function display_price($products_price, $products_tax, $quantity = 1) {
       return $this->format($this->calculate_price($products_price, $products_tax, $quantity));
     }
+
+    function display_off_msg($products_price, $products_new_price){
+      if ($products_price != $products_new_price) {
+        $money = sprintf("%.1f",$products_new_price*10/$products_price);
+        return '['.$money.']折';
+      }
+      
+    }
   }
 ?>
