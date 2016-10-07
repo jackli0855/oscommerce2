@@ -19,7 +19,7 @@
   Released under the GNU General Public License
 
 */
-define('TEXT_MAIN', 'osCommerce Online Merchant v2.3.3.4 <br />于2013年9月26日发布。关键更新：<ul><li>增加了对数据库对MySqli的支持,优先采用Mysqli连接。并兼容传统Mysql。</li><li>统一utf-8编码. 允许设置时区 对php时区和mysql时区进行统一</li></ul>');
+define('TEXT_MAIN', '');
 define('TABLE_HEADING_NEW_PRODUCTS', '本月新品');
 define('TABLE_HEADING_UPCOMING_PRODUCTS', '即将上架');
 define('TABLE_HEADING_DATE_EXPECTED', '上架日期');
